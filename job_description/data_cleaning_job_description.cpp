@@ -34,7 +34,7 @@ int main() {
     while (getline(file, line)) {
         if (line.empty()) continue;
 
-        // Remove quotes if they exist
+        // Remove quotes
         if (line.front() == '"' && line.back() == '"')
             line = line.substr(1, line.size() - 2);
 
@@ -52,7 +52,7 @@ int main() {
         // Skip "with experience in"
         string skillsPart = line.substr(pos + 18);
 
-        // Stop before the first period (.)
+        // Stop before the first period
         size_t endPos = skillsPart.find('.');
         if (endPos != string::npos)
             skillsPart = skillsPart.substr(0, endPos);
@@ -88,7 +88,8 @@ int main() {
             if (count != total) output << ", ";
         }
         output << "\"";
-        if (jobCount != totalJobs) output << "\n";
+        if (jobCount != totalJobs)
+            output << endl;
     }
 
     output.close();
