@@ -210,7 +210,7 @@ void menu(Job*& head) {
 int main() {
     Job* head = nullptr;
 
-    loadJobsFromCSV(head, "mergejob.csv");
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv");
     menu(head);
     return 0;
 }
