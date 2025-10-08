@@ -221,8 +221,6 @@ void menu(Job*& head) {
             cout << "Match Memory: " << matchMemory << " MB\n";
             cout << "Merge Sort Time: " << sortDuration << " ms\n";
             cout << "Sort Memory: " << sortMemory << " MB\n\n";
-            cout << "Total Time: " << matchDuration + sortDuration << " ms\n";
-            cout << "Total Memory: " << matchMemory + sortMemory << " MB\n\n";
             break;
         }
         case 2:
