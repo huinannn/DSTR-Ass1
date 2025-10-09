@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unordered_set>
 #include <string>
 #include <iomanip>
 #include <algorithm>
@@ -16,9 +15,29 @@
 using namespace std;
 using namespace std::chrono;
 
+struct SkillList {
+    string skills[100]; 
+    int size = 0;
+
+    void add(const string& skill) {
+        // Avoid duplicates
+        for (int i = 0; i < size; ++i) {
+            if (skills[i] == skill) return;
+        }
+        skills[size++] = skill;
+    }
+
+    bool contains(const string& skill) const {
+        for (int i = 0; i < size; ++i) {
+            if (skills[i] == skill) return true;
+        }
+        return false;
+    }
+};
+
 struct Job {
     string title;
-    unordered_set<string> requiredSkills;
+    SkillList requiredSkills;
     double matchScore;
     Job* prev = nullptr;
     Job* next = nullptr;
@@ -46,7 +65,7 @@ size_t getMemoryUsageKB() {
 #endif
 }
 
-void insertAtTail(Job*& head, string title, unordered_set<string> skills) {
+void insertAtTail(Job*& head, string title, SkillList skills) {
     Job* newJob = new Job{title, skills, 0, nullptr, nullptr};
     if (!head) {
         head = newJob;
@@ -65,7 +84,7 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
     while (getline(file, line)) {
         stringstream ss(line);
         string title, skillsString;
-        unordered_set<string> skills;
+        SkillList skills;
 
         getline(ss, title, ',');
         getline(ss, skillsString);
@@ -77,7 +96,7 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
         string skill;
         while (getline(skillsStream, skill, ',')) {
             while (!skill.empty() && skill.front() == ' ') skill.erase(skill.begin());
-            skills.insert(toLowerCase(skill));
+            skills.add(toLowerCase(skill));
         }
 
         insertAtTail(head, title, skills);
@@ -86,8 +105,8 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
     file.close();
 }
 
-unordered_set<string> insertSkills() {
-    unordered_set<string> skills;
+SkillList insertSkills() {
+    SkillList skills;
     string skill;
 
     cout << "Enter your skills (type 'done' to finish):\n";
@@ -104,23 +123,22 @@ unordered_set<string> insertSkills() {
         skill.erase(skill.find_last_not_of(" \t") + 1);
 
         if (!skill.empty())
-            skills.insert(toLowerCase(skill));
+            skills.add(toLowerCase(skill));
     }
 
     return skills;
 }
 
 // Optimized Linear Search for skill matching
-void updateAllMatchScores(Job* head, const unordered_set<string>& userSkills) {
+void updateAllMatchScores(Job* head, SkillList userSkills) {
     Job* temp = head;
     while (temp) {
         int matched = 0;
-        for (const auto& js : temp->requiredSkills) {
-            if (userSkills.find(js) != userSkills.end()) { // O(1) lookup
+        for (int i = 0; i < temp->requiredSkills.size; ++i) {
+            if (userSkills.contains(temp->requiredSkills.skills[i]))
                 matched++;
-            }
         }
-        temp->matchScore = ((double)matched / temp->requiredSkills.size()) * 100.0;
+        temp->matchScore = ((double)matched / temp->requiredSkills.size) * 100.0;
         temp = temp->next;
     }
 }
@@ -184,7 +202,7 @@ void displayJobs(Job* head, double minScore) {
 
 void menu(Job*& head) {
     int choice;
-    unordered_set<string> userSkills;
+    SkillList userSkills;
 
     do {
         cout << "==================================" << endl;

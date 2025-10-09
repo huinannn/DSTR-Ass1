@@ -1,10 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unordered_set>
 #include <string>
-#include <iomanip> 
-#include <algorithm> 
+#include <iomanip>
+#include <algorithm>
 #include <chrono>
 #ifdef _WIN32
     #include <windows.h>
@@ -16,9 +15,29 @@
 using namespace std;
 using namespace std::chrono;
 
+struct SkillList {
+    string skills[100];
+    int size = 0;
+
+    void add(const string& skill) {
+        // Avoid duplicates
+        for (int i = 0; i < size; ++i) {
+            if (skills[i] == skill) return;
+        }
+        skills[size++] = skill;
+    }
+
+    bool contains(const string& skill) const {
+        for (int i = 0; i < size; ++i) {
+            if (skills[i] == skill) return true;
+        }
+        return false;
+    }
+};
+
 struct Job {
     string title;
-    unordered_set<string> requiredSkills;
+    SkillList requiredSkills;
     double matchScore;
     Job* prev = nullptr;
     Job* next = nullptr;
@@ -35,7 +54,7 @@ size_t getMemoryUsageKB() {
 #ifdef _WIN32
     PROCESS_MEMORY_COUNTERS_EX pmc;
     GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-    return pmc.WorkingSetSize / 1024; // in KB
+    return pmc.WorkingSetSize / 1024; // KB
 #else
     long rss = 0L;
     std::ifstream statm("/proc/self/statm");
@@ -46,7 +65,7 @@ size_t getMemoryUsageKB() {
 #endif
 }
 
-void insertAtTail(Job*& head, string title, unordered_set<string> skills) {
+void insertAtTail(Job*& head, string title, SkillList skills) {
     Job* newJob = new Job{title, skills, 0, nullptr, nullptr};
     if (!head) {
         head = newJob;
@@ -65,19 +84,19 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
     while (getline(file, line)) {
         stringstream ss(line);
         string title, skillsString;
-        unordered_set<string> skills;
+        SkillList skills;
 
         getline(ss, title, ',');
         getline(ss, skillsString);
 
         if (!skillsString.empty() && skillsString.front() == '"')
             skillsString = skillsString.substr(1, skillsString.size() - 2);
-        
+
         stringstream skillsStream(skillsString);
         string skill;
         while (getline(skillsStream, skill, ',')) {
             while (!skill.empty() && (skill.front() == ' ')) skill.erase(skill.begin());
-            skills.insert(toLowerCase(skill));
+            skills.add(toLowerCase(skill));
         }
 
         insertAtTail(head, title, skills);
@@ -86,8 +105,8 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
     file.close();
 }
 
-unordered_set<string> insertSkills() {
-    unordered_set<string> skills;
+SkillList insertSkills() {
+    SkillList skills;
     string skill;
 
     cout << "Enter your skills (type 'done' to finish):\n";
@@ -105,23 +124,24 @@ unordered_set<string> insertSkills() {
         skill.erase(skill.find_last_not_of(" \t") + 1);
 
         if (!skill.empty())
-            skills.insert(toLowerCase(skill));
+            skills.add(toLowerCase(skill));
     }
 
     return skills;
 }
 
-void updateAllMatchScores(Job* head, unordered_set<string> skills) {
+void updateAllMatchScores(Job* head, SkillList userSkills) {
     Job* temp = head;
     while (temp) {
         int matched = 0;
-        for (string js : temp->requiredSkills)
-            for (string us: skills)
-                if (js == us) matched++;
-        temp->matchScore = ((double) matched / temp->requiredSkills.size()) * 100.0;
+        for (int i = 0; i < temp->requiredSkills.size; ++i) {
+            if (userSkills.contains(temp->requiredSkills.skills[i]))
+                matched++;
+        }
+        temp->matchScore = ((double)matched / temp->requiredSkills.size) * 100.0;
         temp = temp->next;
     }
-}   
+}
 
 void sortByScore(Job*& head) {
     if (!head) return;
@@ -168,8 +188,8 @@ void displayJobs(Job* head, double minScore) {
 
 void menu(Job*& head) {
     int choice;
-    unordered_set<string> userSkills;
-
+    SkillList userSkills;
+    
     do {
         cout << "==================================" << endl;
         cout << "            Job Seeker            " << endl;
@@ -184,7 +204,7 @@ void menu(Job*& head) {
         case 1: {
             userSkills = insertSkills();
 
-            // Measure search/matching time + memory
+            // Measure search/matching time & memory
             auto matchStart = high_resolution_clock::now();
             updateAllMatchScores(head, userSkills);
             auto matchEnd = high_resolution_clock::now();
