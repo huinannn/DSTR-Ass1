@@ -16,22 +16,28 @@ using namespace std;
 using namespace std::chrono;
 
 struct SkillList {
-    string skills[100]; 
+    string skills[100];
+    double weights[100];
     int size = 0;
 
-    void add(const string& skill) {
-        // Avoid duplicates
-        for (int i = 0; i < size; ++i) {
+    void add(const string& skill, double weight = 0.0) {
+        for (int i = 0; i < size; ++i)
             if (skills[i] == skill) return;
-        }
-        skills[size++] = skill;
+        skills[size] = skill;
+        weights[size] = weight;
+        size++;
     }
 
     bool contains(const string& skill) const {
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < size; ++i)
             if (skills[i] == skill) return true;
-        }
         return false;
+    }
+
+    double getWeight(const string& skill) const {
+        for (int i = 0; i < size; ++i)
+            if (skills[i] == skill) return weights[i];
+        return 0.0;
     }
 };
 
@@ -77,7 +83,7 @@ void insertAtTail(Job*& head, string title, SkillList skills) {
     newJob->prev = temp;
 }
 
-void loadJobsFromCSV(Job*& head, const string& filename) {
+void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkills) {
     ifstream file(filename);
     string line;
 
@@ -105,9 +111,10 @@ void loadJobsFromCSV(Job*& head, const string& filename) {
     file.close();
 }
 
-SkillList insertSkills() {
-    SkillList skills;
+SkillList insertSkills(const SkillList& allValidSkills) {
+    SkillList userSkills;
     string skill;
+    double weightCounter = 1.0;
 
     cout << "Enter your skills (type 'done' to finish):\n";
     cin.ignore();
@@ -119,30 +126,42 @@ SkillList insertSkills() {
         if (lowerSkill == "done")
             break;
 
-        skill.erase(0, skill.find_first_not_of(" \t"));
-        skill.erase(skill.find_last_not_of(" \t") + 1);
+        // trim
+        lowerSkill.erase(0, lowerSkill.find_first_not_of(" \t"));
+        lowerSkill.erase(lowerSkill.find_last_not_of(" \t") + 1);
 
-        if (!skill.empty())
-            skills.add(toLowerCase(skill));
+        // Only add skills that exist in the dataset
+        if (allValidSkills.contains(lowerSkill)) {
+            userSkills.add(lowerSkill, weightCounter);
+            weightCounter++;
+        }
     }
 
-    return skills;
+    return userSkills;
 }
 
 // Optimized Linear Search for skill matching
 void updateAllMatchScores(Job* head, SkillList userSkills) {
     Job* temp = head;
+    double totalUserWeight = (userSkills.size * (userSkills.size + 1)) / 2.0;
+
     while (temp) {
-        int matched = 0;
+        double matchedWeight = 0.0;
+
         for (int i = 0; i < temp->requiredSkills.size; ++i) {
-            if (userSkills.contains(temp->requiredSkills.skills[i]))
-                matched++;
+            const string& reqSkill = temp->requiredSkills.skills[i];
+            if (userSkills.contains(reqSkill))
+                matchedWeight += userSkills.getWeight(reqSkill);
         }
-        temp->matchScore = ((double)matched / temp->requiredSkills.size) * 100.0;
+
+        if (totalUserWeight > 0)
+            temp->matchScore = (matchedWeight / totalUserWeight) * 100.0;
+        else
+            temp->matchScore = 0.0;
+
         temp = temp->next;
     }
 }
-
 // Merge Sort for Doubly Linked List
 Job* split(Job* head) {
     Job* fast = head, *slow = head;
@@ -200,7 +219,7 @@ void displayJobs(Job* head, double minScore) {
     cout << "\n";
 }
 
-void menu(Job*& head) {
+void menu(Job*& head, const SkillList& allValidSkills) {
     int choice;
     SkillList userSkills;
 
@@ -215,7 +234,7 @@ void menu(Job*& head) {
 
         switch (choice) {
         case 1: {
-            userSkills = insertSkills();
+            userSkills = insertSkills(allValidSkills);
 
             // Measure optimized search/matching
             auto matchStart = high_resolution_clock::now();
@@ -253,8 +272,9 @@ void menu(Job*& head) {
 
 int main() {
     Job* head = nullptr;
+    SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "../../job_description/mergejob.csv");
-    menu(head);
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
+    menu(head, allValidSkills);
     return 0;
 }
