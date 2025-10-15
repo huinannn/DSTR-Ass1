@@ -182,7 +182,7 @@ int main() {
     cout << "==============================================" << endl;
 
     JobMatcher jm;
-    jm.loadJobs("../job_description/mergejob.csv");  // Adjust path if needed
+    jm.loadJobs("../../job_description/mergejob.csv");  // Adjust path if needed
 
     int choice;
     do {

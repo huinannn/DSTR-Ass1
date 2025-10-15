@@ -299,8 +299,8 @@ struct HRSystem {
 // ---------- Main ----------
 int main() {
     HRSystem hr;
-    hr.loadJobs("../job_description/mergejob.csv");
-    hr.loadCandidates("../resume/candidates.csv");
+    hr.loadJobs("../../job_description/mergejob.csv");
+    hr.loadCandidates("../../resume/candidates.csv");
 
     hr.displayJobs();
     hr.searchAndMatch();
