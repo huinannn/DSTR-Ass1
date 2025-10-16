@@ -8,15 +8,25 @@
 #include <iomanip>
 #include <algorithm>
 #include <limits>
+#include <chrono> // For performance timing
 using namespace std;
 
+// =======================
+//  CONSTANT DEFINITIONS
+// =======================
 const int MAX_JOBS = 50;
 const int MAX_SKILLS = 20;
 const int MAX_CANDIDATES = 500;
 
+// =======================
+//  UTILITY FUNCTIONS
+// =======================
 string trim(const string &s);
 string toLower(string str);
 
+// =======================
+//  STRUCT DEFINITIONS
+// =======================
 struct Candidate {
     string name;
     string skills[MAX_SKILLS];
@@ -34,6 +44,9 @@ struct JobHR {
     JobHR();
 };
 
+// =======================
+//  CLASS: HRSystem
+// =======================
 class HRSystem {
 private:
     JobHR jobs[MAX_JOBS];
@@ -43,13 +56,26 @@ private:
 
 public:
     HRSystem();
+
+    // File loading
     void loadJobs(const string &filename);
     void loadCandidates(const string &filename);
+
+    // Display and Search
     void displayJobs();
-    void insertionSort(); // labeled (Insertion Sort)
-    int binarySearch(string target); // labeled (Binary Search)
+    int binarySearch(string target); // Binary Search for job name
+
+    // Sorting
+    void insertionSort(); // Insertion Sort by percentage
+
+    // Matching and Results
     void searchAndMatch();
     void displayTop5();
 };
+
+// =======================
+//  MAIN EXECUTION FUNCTION
+// =======================
+void runHRSystem();
 
 #endif

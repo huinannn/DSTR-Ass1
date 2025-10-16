@@ -64,8 +64,8 @@ int main() {
                 cout << "Running: InsertionBinary_HR.cpp (Binary Search + Insertion Sort)\n";
                 command = "g++ ./Array_Jing/Array_HR/InsertionBinary_HR.cpp -o HR && ./HR";
             } else if (algorithm.find("jump") != string::npos && algorithm.find("merge") != string::npos) {
-                cout << "Running: JumpMerge_HR.cpp (Jump Search + Merge Sort)\n";
-                command = "g++ ./Array_Jing/Array_HR/JumpMerge_HR.cpp -o HR && ./HR";
+                cout << "Running: MergeJump_HR.cpp (Jump Search + Merge Sort)\n";
+                command = "g++ ./Array_Xin/HR/MergeJump_HR.cpp -o HR && ./HR";
             } else {
                 cout << "❌ Invalid algorithm combination.\n";
                 return 0;
@@ -91,8 +91,8 @@ int main() {
                 cout << "Running: InsertionBinary_JobSeeker.cpp (Binary Search + Insertion Sort)\n";
                 command = "g++ ./Array_Jing/Array_jobseeker/InsertionBinary_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
             } else if (algorithm.find("jump") != string::npos && algorithm.find("merge") != string::npos) {
-                cout << "Running: JumpMerge_JobSeeker.cpp (Jump Search + Merge Sort)\n";
-                command = "g++ ./Array_Jing/Array_jobseeker/JumpMerge_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
+                cout << "Running: MergeJump_JobSeeker.cpp (Jump Search + Merge Sort)\n";
+                command = "g++ ./Array_Xin/Job_Seeker/MergeJump_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
             } else {
                 cout << "❌ Invalid algorithm combination.\n";
                 return 0;

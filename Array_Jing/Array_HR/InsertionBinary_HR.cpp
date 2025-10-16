@@ -1,4 +1,6 @@
 #include "InsertionBinary_HR.hpp"
+#include <chrono>
+using namespace std::chrono;
 
 string trim(const string &s) {
     size_t start = s.find_first_not_of(" \t");
@@ -108,7 +110,15 @@ void HRSystem::insertionSort() {
     }
 }
 
+
+
+#include <chrono>
+using namespace std::chrono;
+
 void HRSystem::searchAndMatch() {
+    auto systemStart = chrono::high_resolution_clock::now();
+    double lastMatchTime = 0.0;
+
     while (true) {
         cout << "\n==================================\n";
         cout << "===== HR Job Matching System =====\n";
@@ -188,6 +198,9 @@ void HRSystem::searchAndMatch() {
         }
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
+        // Start timing the matching process ⏱️
+        auto start = chrono::high_resolution_clock::now();
+
         // Matching logic
         for (int i = 0; i < candCount; i++) {
             candidates[i].matchedSkills = 0;
@@ -208,6 +221,9 @@ void HRSystem::searchAndMatch() {
         }
 
         insertionSort();
+        auto end = chrono::high_resolution_clock::now();
+
+        lastMatchTime = chrono::duration<double, milli>(end - start).count();
         displayTop5();
 
         int choice;
@@ -215,7 +231,8 @@ void HRSystem::searchAndMatch() {
             cout << "\n=============================\n";
             cout << "Action:\n";
             cout << "1. Find another match\n";
-            cout << "2. Exit\n";
+            cout << "2. Performance Summary\n";
+            cout << "3. Exit System\n";
             cout << "=============================\n";
             cout << "Enter your choice: ";
             cin >> choice;
@@ -223,22 +240,45 @@ void HRSystem::searchAndMatch() {
             if (cin.fail()) {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "❌ Invalid input. Please enter 1 or 2.\n";
+                cout << "❌ Invalid input. Please enter 1, 2, or 3.\n";
                 continue;
             }
 
             if (choice == 1) {
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break; // Continue main while loop
-            } else if (choice == 2) {
-                cout << "Exiting system...\n";
+                break; // Repeat from top
+            } 
+            else if (choice == 2) {
+                size_t memoryUsed =
+                    sizeof(*this) +
+                    jobCount * sizeof(JobHR) +
+                    candCount * sizeof(Candidate);
+
+                cout << "\n=============================\n";
+                cout << "Performance Summary\n";
+                cout << "=============================\n";
+                cout << "Last Match Time: " << fixed << setprecision(3) << lastMatchTime << " ms\n";
+                cout << "Approx. Memory Used: " << (memoryUsed / 1024.0) << " KB\n";
+            }
+            else if (choice == 3) {
+                cout << "\n==============================================" << endl;
+                cout << "     Thank you for using the HR System!" << endl;
+                cout << "==============================================" << endl;
+                auto systemEnd = chrono::high_resolution_clock::now();
+                double totalSystemTime =
+                    chrono::duration<double, milli>(systemEnd - systemStart).count();
+                cout << "Total Session Runtime: " 
+                     << fixed << setprecision(3) << totalSystemTime << " ms ("
+                     << totalSystemTime / 1000.0 << " s)\n";
                 return;
-            } else {
-                cout << "❌ Invalid choice. Please enter 1 or 2.\n";
+            } 
+            else {
+                cout << "❌ Invalid choice. Please enter 1, 2, or 3.\n";
             }
         }
     }
 }
+
 
 void HRSystem::displayTop5() {
     cout << "\n===== Top 5 Matching Candidates =====\n";

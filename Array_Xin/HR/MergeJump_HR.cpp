@@ -256,8 +256,8 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
 
 // ====================== Main ======================
 int main() {
-    DynamicArray<Candidate> candidates = readCandidates("../../resume/candidates.csv");
-    DynamicArray<Job> jobs = readJobs("../../job_description/mergejob.csv");
+    DynamicArray<Candidate> candidates = readCandidates("resume/candidates.csv");
+    DynamicArray<Job> jobs = readJobs("job_description/mergejob.csv");
 
     if (candidates.getSize() == 0 || jobs.getSize() == 0) {
         cout << "Error: CSV files not found or empty.\n";
