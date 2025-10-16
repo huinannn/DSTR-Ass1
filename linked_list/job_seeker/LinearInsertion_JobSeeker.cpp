@@ -1,4 +1,4 @@
-#include "Job_seeker_setA.hpp"
+#include "LinearInsertion_JobSeeker.hpp"
 
 void SkillList::add(const string& skill, double weight) {
     skills[size] = skill;
@@ -283,7 +283,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
