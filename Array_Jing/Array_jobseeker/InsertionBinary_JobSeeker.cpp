@@ -1,5 +1,8 @@
 #include "InsertionBinary_JobSeeker.hpp"
 
+#include <chrono>
+using namespace std::chrono;
+
 // ---------- Constructor ----------
 JobMatcher::JobMatcher() {
     jobCount = 0;
@@ -155,6 +158,8 @@ void JobMatcher::displayTopMatches() {
     }
 }
 
+
+// ---------- Main Program ----------
 // ---------- Main Program ----------
 void runJobSeekerSystem() {
     cout << "==============================================" << endl;
@@ -164,29 +169,78 @@ void runJobSeekerSystem() {
     JobMatcher jm;
     jm.loadJobs("job_description/mergejob.csv");
 
-    int choice;
-    do {
-        cout << "\n----------------------------------------------" << endl;
+    bool running = true;
+    auto systemStart = chrono::high_resolution_clock::now();
+
+    while (running) {
         jm.inputSeekerSkills();
+
+        auto start = chrono::high_resolution_clock::now();
         jm.matchSkillsWeighted();
-        jm.sortJobsByWeightedScore(); // ✅ Insertion Sort
+        jm.sortJobsByWeightedScore();
+        auto end = chrono::high_resolution_clock::now();
+
         jm.displayTopMatches();
 
-        cout << "\n----------------------------------------------" << endl;
-        cout << "Action:\n1. Continue Finding Job\n2. Exit\nEnter your choice: ";
-        while (!(cin >> choice) || (choice != 1 && choice != 2)) {
-            cout << "⚠️ Invalid input! Enter 1 or 2: ";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        double totalTime = chrono::duration<double, milli>(end - start).count();
+
+        // 🔁 Inner loop for menu navigation
+        bool backToSkill = false;
+        while (true) {
+            int choice;
+            cout << "\n----------------------------------------------" << endl;
+            cout << "Action:\n"
+                 << "1. Continue Finding Job\n"
+                 << "2. Performance Summary\n"
+                 << "3. Exit System\n"
+                 << "Enter your choice: ";
+
+            while (!(cin >> choice) || (choice < 1 || choice > 3)) {
+                cout << "⚠️ Invalid input! Enter 1, 2, or 3: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            cin.ignore();
+
+            if (choice == 1) {
+                backToSkill = true;
+                break; // go back to skill input
+            } 
+            else if (choice == 2) {
+                size_t memoryUsed =
+                    sizeof(jm) +
+                    jm.getJobCount() * sizeof(JobJS) +
+                    jm.getSeekerSkillCount() * sizeof(string);
+
+                cout << "\n=============================\n";
+                cout << "Performance Summary\n";
+                cout << "=============================\n";
+                cout << "Time for last job match: " << fixed << setprecision(3) << totalTime << " ms\n";
+                cout << "Approx. Memory Used: " << (memoryUsed / 1024.0) << " KB\n";
+                // 👇 stay in the same menu after showing summary
+            } 
+            else if (choice == 3) {
+                running = false;
+                backToSkill = false;
+                cout << "\n==============================================" << endl;
+                cout << "        Thank you for using the system!" << endl;
+                cout << "==============================================" << endl;
+                break;
+            }
         }
-        cin.ignore();
-    } while (choice == 1);
 
-    cout << "\n==============================================" << endl;
-    cout << "        Thank you for using the system!" << endl;
-    cout << "==============================================" << endl;
+        if (!running) break; // exit entire program
+        if (!backToSkill) continue; // stay in current menu if summary shown
+    }
 
+    auto systemEnd = chrono::high_resolution_clock::now();
+    double totalSystemTime = chrono::duration<double, milli>(systemEnd - systemStart).count();
+
+    cout << "Total session runtime: " << fixed << setprecision(3) << totalSystemTime << " ms\n";
 }
+
+
+
 
 int main() {
     runJobSeekerSystem();
