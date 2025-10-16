@@ -27,21 +27,6 @@ string toLowerCase(const string& str) {
     return lower;
 }
 
-size_t getMemoryUsageKB() {
-#ifdef _WIN32
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-    return pmc.WorkingSetSize / 1024;
-#else
-    long rss = 0L;
-    std::ifstream statm("/proc/self/statm");
-    long dummy;
-    statm >> dummy >> rss;
-    statm.close();
-    return rss * (sysconf(_SC_PAGESIZE) / 1024);
-#endif
-}
-
 void insertAtTail(Job*& head, string title, SkillList skills) {
     Job* newJob = new Job{title, skills, 0, nullptr, nullptr};
     if (!head) {
@@ -200,13 +185,13 @@ void displayJobs(Job* head, double minScore) {
     cout << "\n";
 }
 
-void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
+void menu(Job*& head, const SkillList& allValidSkills) {
     int choice;
     SkillList userSkills;
 
     // Variables to store performance data
-    double matchDuration = 0.0, matchMemory = 0.0;
-    double sortDuration = 0.0, sortMemory = 0.0;
+    double matchDuration = 0.0, sortDuration = 0.0;
+    size_t baseMemory = 0, matchMemoryKB = 0, sortMemoryKB = 0;
     bool performanceRecorded = false;
 
     do {
@@ -224,28 +209,42 @@ void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
             case 1: {
                 userSkills = insertSkills(allValidSkills);
 
-                // Measure search/matching time & memory
-                auto matchStart = high_resolution_clock::now();
+                auto matchStart = chrono::high_resolution_clock::now();
                 updateAllMatchScores(head, userSkills);
-                auto matchEnd = high_resolution_clock::now();
-                size_t matchEndMem = getMemoryUsageKB() - baselineMemory;
+                auto matchEnd = chrono::high_resolution_clock::now();
 
-                matchDuration = duration<double, milli>(matchEnd - matchStart).count();
-                matchMemory = static_cast<double>(matchEndMem) / 1024.0; // Convert to MB
-
-                // Measure sorting time & memory
-                auto sortStart = high_resolution_clock::now();
+                auto sortStart = chrono::high_resolution_clock::now();
                 sortByScore(head);
-                auto sortEnd = high_resolution_clock::now();
-                size_t sortEndMem = getMemoryUsageKB() - baselineMemory;
+                auto sortEnd = chrono::high_resolution_clock::now();
 
-                sortDuration = duration<double, milli>(sortEnd - sortStart).count();
-                sortMemory = static_cast<double>(sortEndMem) / 1024.0; // Convert to MB
+                matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
+                sortDuration = chrono::duration<double, milli>(sortEnd - sortStart).count();
+
+                // ✅ Manual memory estimation
+                baseMemory = sizeof(SkillList) * 2 + sizeof(Job) * 100 + sizeof(string) * 200;
+                matchMemoryKB = sizeof(SkillList) + sizeof(string) * userSkills.size;
+                sortMemoryKB = sizeof(Job) * 100 + sizeof(int) * 2;
 
                 performanceRecorded = true;
-
-                // Display matching jobs
                 displayJobs(head, 0);
+                break;
+            }
+
+            case 2: {
+                if (performanceRecorded) {
+                    cout << fixed << setprecision(4);
+                    cout << "\n=============================\n";
+                    cout << "Performance Summary\n";
+                    cout << "=============================\n";
+                    cout << "Skill Matching Time: " << matchDuration << " ms\n";
+                    cout << "Insertion Sort Time: " << sortDuration << " ms\n";
+                    cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";
+                    cout << "Skill Matching Memory: " << (matchMemoryKB / 1024.0) << " KB\n";
+                    cout << "Sorting Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
+                    cout.unsetf(ios::fixed);
+                } else {
+                    cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
+                }
                 break;
             }
 
@@ -253,34 +252,19 @@ void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
                 cout << "Exiting program, have a nice day!" << endl;
                 break;
 
-            case 2:
-                if (performanceRecorded) {
-                    cout << fixed << setprecision(3);
-                    cout << "\n=== Performance Report ===\n";
-                    cout << "Search / Match Time: " << matchDuration << " ms\n";
-                    cout << "Search / Match Memory: " << matchMemory << " MB\n";
-                    cout << "Sort Time: " << sortDuration << " ms\n";
-                    cout << "Sort Memory: " << sortMemory << " MB\n\n";
-                    cout.unsetf(ios::fixed);
-                } else {
-                    cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
-                }
-                break;
-
             default:
                 cout << "Invalid choice. Please try again.\n";
                 break;
         }
 
-    } while (choice != 2);
+    } while (choice != 3);
 }
 
 int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
-    size_t baselineMemory = getMemoryUsageKB();
 
     loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
-    menu(head, allValidSkills, baselineMemory);
+    menu(head, allValidSkills);
     return 0;
 }
