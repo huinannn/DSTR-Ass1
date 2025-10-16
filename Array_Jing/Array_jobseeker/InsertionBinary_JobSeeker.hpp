@@ -28,20 +28,25 @@ private:
     string seekerSkills[20];
     int seekerSkillCount;
 
+    // ---------- Utility Functions ----------
     string trim(const string &s);
     string toLower(string str);
-    int binarySearchJob(const string &title);
 
 public:
+    // ---------- Constructor ----------
     JobMatcher();
 
+    // ---------- Core Functionalities ----------
     void loadJobs(const string &filename);
     void inputSeekerSkills();
     void matchSkillsWeighted();
     void sortJobsByWeightedScore();
     void displayTopMatches();
 
-    // ✅ Correct getter methods
+    // ---------- Binary Search ----------
+    int binarySearchJob(const string &title);
+
+    // ---------- Getter Methods ----------
     int getJobCount() const { return jobCount; }
     int getSeekerSkillCount() const { return seekerSkillCount; }
 };

@@ -1,5 +1,4 @@
 #include "InsertionBinary_JobSeeker.hpp"
-
 #include <chrono>
 using namespace std::chrono;
 
@@ -158,8 +157,6 @@ void JobMatcher::displayTopMatches() {
     }
 }
 
-
-// ---------- Main Program ----------
 // ---------- Main Program ----------
 void runJobSeekerSystem() {
     cout << "==============================================" << endl;
@@ -175,16 +172,28 @@ void runJobSeekerSystem() {
     while (running) {
         jm.inputSeekerSkills();
 
-        auto start = chrono::high_resolution_clock::now();
+        // ✅ Step 1: Skill Matching Time
+        auto startMatch = chrono::high_resolution_clock::now();
         jm.matchSkillsWeighted();
+        auto endMatch = chrono::high_resolution_clock::now();
+
+        // ✅ Step 2: Insertion Sort Time
+        auto startSort = chrono::high_resolution_clock::now();
         jm.sortJobsByWeightedScore();
-        auto end = chrono::high_resolution_clock::now();
+        auto endSort = chrono::high_resolution_clock::now();
+
+        // ✅ Step 3: Binary Search Time (example)
+        auto startBinary = chrono::high_resolution_clock::now();
+        jm.binarySearchJob("Software Engineer"); // can be user-input job name
+        auto endBinary = chrono::high_resolution_clock::now();
 
         jm.displayTopMatches();
 
-        double totalTime = chrono::duration<double, milli>(end - start).count();
+        double matchTime = chrono::duration<double, milli>(endMatch - startMatch).count();
+        double sortTime = chrono::duration<double, milli>(endSort - startSort).count();
+        double binaryTime = chrono::duration<double, micro>(endBinary - startBinary).count();
 
-        // 🔁 Inner loop for menu navigation
+        // 🔁 Inner menu loop
         bool backToSkill = false;
         while (true) {
             int choice;
@@ -204,20 +213,27 @@ void runJobSeekerSystem() {
 
             if (choice == 1) {
                 backToSkill = true;
-                break; // go back to skill input
+                break;
             } 
             else if (choice == 2) {
-                size_t memoryUsed =
+                // ✅ Memory usage estimation
+                size_t baseMemory =
                     sizeof(jm) +
                     jm.getJobCount() * sizeof(JobJS) +
                     jm.getSeekerSkillCount() * sizeof(string);
 
+                size_t binaryMemory = sizeof(string) * 2 + sizeof(int) * 3;
+                size_t sortMemory = jm.getJobCount() * sizeof(JobJS) + sizeof(int) * 2;
+
                 cout << "\n=============================\n";
                 cout << "Performance Summary\n";
                 cout << "=============================\n";
-                cout << "Time for last job match: " << fixed << setprecision(3) << totalTime << " ms\n";
-                cout << "Approx. Memory Used: " << (memoryUsed / 1024.0) << " KB\n";
-                // 👇 stay in the same menu after showing summary
+                cout << "Skill Matching Time: " << fixed << setprecision(3) << matchTime << " ms\n";
+                cout << "Binary Search Time: " << fixed << setprecision(3) << binaryTime << " ms\n";
+                cout << "Insertion Sort Time: " << fixed << setprecision(3) << sortTime << " ms\n";
+                cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";
+                cout << "Binary Search Memory: " << (binaryMemory / 1024.0) << " KB\n";
+                cout << "Insertion Sort Memory: " << (sortMemory / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 running = false;
@@ -229,8 +245,8 @@ void runJobSeekerSystem() {
             }
         }
 
-        if (!running) break; // exit entire program
-        if (!backToSkill) continue; // stay in current menu if summary shown
+        if (!running) break;
+        if (!backToSkill) continue;
     }
 
     auto systemEnd = chrono::high_resolution_clock::now();
@@ -238,9 +254,6 @@ void runJobSeekerSystem() {
 
     cout << "Total session runtime: " << fixed << setprecision(3) << totalSystemTime << " ms\n";
 }
-
-
-
 
 int main() {
     runJobSeekerSystem();
