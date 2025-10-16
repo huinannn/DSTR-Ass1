@@ -1,5 +1,5 @@
-#ifndef JOB_SEEKER_SETB_HPP
-#define JOB_SEEKER_SETB_HPP
+#ifndef OPTIMIZEDMERGE_JOBSEEKER_HPP
+#define OPTIMIZEDMERGE_JOBSEEKER_HPP
 
 #include <iostream>
 #include <fstream>

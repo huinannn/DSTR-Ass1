@@ -1,5 +1,5 @@
-#ifndef JOB_SEEKER_SETA_HPP
-#define JOB_SEEKER_SETA_HPP
+#ifndef LINEARINSERTION_JOBSEEKER_HPP
+#define LINEARINSERTION_JOBSEEKER_HPP
 
 #include <iostream>
 #include <fstream>
