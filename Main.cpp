@@ -73,10 +73,10 @@ int main() {
         } else {
             if (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos) {
                 cout << "Running: LinearInsertion_HR.cpp (Linear Search + Insertion Sort)\n";
-                command = "g++ ./Linked_Jing/Linked_HR/LinearInsertion_HR.cpp -o HR && ./HR";
+                command = "g++ ./linked_list/job_seeker/LinearInsertion_HR.cpp -o HR && ./HR";
             } else if (algorithm.find("optimized") != string::npos && algorithm.find("merge") != string::npos) {
                 cout << "Running: OptimizedMerge_HR.cpp (Optimized Linear Search + Merge Sort)\n";
-                command = "g++ ./Linked_Jing/Linked_HR/OptimizedMerge_HR.cpp -o HR && ./HR";
+                command = "g++ ./Linked_list/Linked_HR/OptimizedMerge_HR.cpp -o HR && ./HR";
             } else {
                 cout << "❌ Invalid algorithm combination.\n";
                 return 0;
@@ -100,10 +100,10 @@ int main() {
         } else {
             if (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos) {
                 cout << "Running: LinearInsertion_JobSeeker.cpp (Linear Search + Insertion Sort)\n";
-                command = "g++ ./Linked_Jing/Linked_jobseeker/LinearInsertion_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
+                command = "g++ ./linked_list/job_seeker/LinearInsertion_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
             } else if (algorithm.find("optimized") != string::npos && algorithm.find("merge") != string::npos) {
                 cout << "Running: OptimizedMerge_JobSeeker.cpp (Optimized Linear Search + Merge Sort)\n";
-                command = "g++ ./Linked_Jing/Linked_jobseeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
+                command = "g++ ./linked_list/job_seeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker && ./JobSeeker";
             } else {
                 cout << "❌ Invalid algorithm combination.\n";
                 return 0;

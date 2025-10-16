@@ -273,7 +273,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
