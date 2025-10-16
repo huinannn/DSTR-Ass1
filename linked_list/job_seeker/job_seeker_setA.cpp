@@ -118,20 +118,25 @@ SkillList insertSkills(const SkillList& allValidSkills) {
     return userSkills;
 }
 
-void updateAllMatchScores(Job* head, const SkillList& userSkills) {
+void updateAllMatchScores(Job* head, const SkillList& userSkills, 
+                          double& searchTime, size_t& searchMemory) {
     Job* temp = head;
+
+    auto searchStart = chrono::high_resolution_clock::now();
+
+    size_t memoryUsed = 0;
     while (temp) {
         double matchedWeight = 0.0;
         int skillCount = temp->requiredSkills.size;
 
-        // Calculate maximum possible weight for this job
         double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
 
-        // Assign descending weights to job skills (like 5, 4, 3, 2, 1)
         for (int i = 0; i < skillCount; ++i) {
             const string& jobSkill = temp->requiredSkills.skills[i];
-            double weight = skillCount - i; // descending weight
+            double weight = skillCount - i;
 
+            // Each call to contains() is a linear search
+            memoryUsed += sizeof(string) + sizeof(double);
             if (userSkills.contains(jobSkill)) {
                 matchedWeight += weight;
             }
@@ -144,7 +149,12 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills) {
 
         temp = temp->next;
     }
+
+    auto searchEnd = chrono::high_resolution_clock::now();
+    searchTime = chrono::duration<double, milli>(searchEnd - searchStart).count();
+    searchMemory = memoryUsed;
 }
+
 
 
 void sortByScore(Job*& head) {
@@ -197,8 +207,8 @@ void menu(Job*& head, const SkillList& allValidSkills) {
     int choice;
     SkillList userSkills;
 
-    double matchDuration = 0.0, sortDuration = 0.0;
-    size_t baseMemory = 0, matchMemoryKB = 0, sortMemoryKB = 0;
+    double matchDuration = 0.0, sortDuration = 0.0, searchDuration = 0.0;
+    size_t baseMemory = 0, matchMemoryKB = 0, sortMemoryKB = 0, searchMemoryKB = 0;
     bool performanceRecorded = false;
 
     do {
@@ -217,8 +227,9 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 userSkills = insertSkills(allValidSkills);
 
                 auto matchStart = chrono::high_resolution_clock::now();
-                updateAllMatchScores(head, userSkills);
+                updateAllMatchScores(head, userSkills, searchDuration, searchMemoryKB);
                 auto matchEnd = chrono::high_resolution_clock::now();
+                matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
 
                 auto sortStart = chrono::high_resolution_clock::now();
                 sortByScore(head);
@@ -244,10 +255,11 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
                     cout << "Skill Matching Time: " << matchDuration << " ms\n";
+                    cout << "Linear Search Time: " << searchDuration << " ms\n";
                     cout << "Insertion Sort Time: " << sortDuration << " ms\n";
-                    cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";
-                    cout << "Skill Matching Memory: " << (matchMemoryKB / 1024.0) << " KB\n";
-                    cout << "Sorting Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
+                    cout << "Linear Search Memory: " << (searchMemoryKB / 1024.0) << " KB\n";
+                    cout << "Insertion Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n";
+                    cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n\n";
                     cout.unsetf(ios::fixed);
                 } else {
                     cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
