@@ -212,13 +212,19 @@ void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
     int choice;
     SkillList userSkills;
 
+    // Variables to store performance data
+    double matchDuration = 0.0, matchMemory = 0.0;
+    double sortDuration = 0.0, sortMemory = 0.0;
+    bool performanceRecorded = false;
+
     do {
         cout << "==================================" << endl;
         cout << "            Job Seeker            " << endl;
         cout << "  Linear Search & Insertion Sort  " << endl;
         cout << "==================================" << endl;
         cout << "1. Insert Skills" << endl;
-        cout << "2. Exit" << endl;
+        cout << "2. Performance Report" << endl;
+        cout << "3. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
 
@@ -228,42 +234,47 @@ void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
 
                 // Measure search/matching time & memory
                 auto matchStart = high_resolution_clock::now();
-
                 updateAllMatchScores(head, userSkills);
-
                 auto matchEnd = high_resolution_clock::now();
                 size_t matchEndMem = getMemoryUsageKB() - baselineMemory;
 
-                double matchDuration = duration<double, milli>(matchEnd - matchStart).count();
-                double matchMemory = static_cast<double>(matchEndMem) / 1024.0; // Convert to MB
+                matchDuration = duration<double, milli>(matchEnd - matchStart).count();
+                matchMemory = static_cast<double>(matchEndMem) / 1024.0; // Convert to MB
 
                 // Measure sorting time & memory
                 auto sortStart = high_resolution_clock::now();
-
                 sortByScore(head);
-
                 auto sortEnd = high_resolution_clock::now();
                 size_t sortEndMem = getMemoryUsageKB() - baselineMemory;
 
-                double sortDuration = duration<double, milli>(sortEnd - sortStart).count();
-                double sortMemory = static_cast<double>(sortEndMem) / 1024; // Convert to MB
+                sortDuration = duration<double, milli>(sortEnd - sortStart).count();
+                sortMemory = static_cast<double>(sortEndMem) / 1024.0; // Convert to MB
 
-                // Display jobs
+                performanceRecorded = true;
+
+                // Display matching jobs
                 displayJobs(head, 0);
-
-                // Performance report
-                cout << fixed << setprecision(3);
-                cout << "\n=== Performance Report ===\n";
-                cout << "Search / Match Time: " << matchDuration << " ms\n";
-                cout << "Search / Match Memory: " << matchMemory << " MB\n";
-                cout << "Sort Time: " << sortDuration << " ms\n";
-                cout << "Sort Memory: " << sortMemory << " MB\n\n";
-                cout.unsetf(ios::fixed);
                 break;
             }
-            case 2:
+
+            case 3:
                 cout << "Exiting program, have a nice day!" << endl;
                 break;
+
+            case 2:
+                if (performanceRecorded) {
+                    cout << fixed << setprecision(3);
+                    cout << "\n=== Performance Report ===\n";
+                    cout << "Search / Match Time: " << matchDuration << " ms\n";
+                    cout << "Search / Match Memory: " << matchMemory << " MB\n";
+                    cout << "Sort Time: " << sortDuration << " ms\n";
+                    cout << "Sort Memory: " << sortMemory << " MB\n\n";
+                    cout.unsetf(ios::fixed);
+                } else {
+                    cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
+                }
+                break;
+
             default:
                 cout << "Invalid choice. Please try again.\n";
                 break;
