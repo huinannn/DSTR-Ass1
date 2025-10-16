@@ -229,7 +229,7 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
 
 // ====================== Main ======================
 int main() {
-    DynamicArray<Job> jobs = readJobs("../mergejob.csv");
+    DynamicArray<Job> jobs = readJobs("../../job_description/mergejob.csv");
 
     if (jobs.getSize() == 0) {
         cout << "Error: CSV file not found or empty.\n";
