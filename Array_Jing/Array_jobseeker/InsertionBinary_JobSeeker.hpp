@@ -30,8 +30,6 @@ private:
 
     string trim(const string &s);
     string toLower(string str);
-
-    // ✅ Binary Search
     int binarySearchJob(const string &title);
 
 public:
@@ -40,11 +38,12 @@ public:
     void loadJobs(const string &filename);
     void inputSeekerSkills();
     void matchSkillsWeighted();
-
-    // ✅ Insertion Sort
     void sortJobsByWeightedScore();
-
     void displayTopMatches();
+
+    // ✅ Correct getter methods
+    int getJobCount() const { return jobCount; }
+    int getSeekerSkillCount() const { return seekerSkillCount; }
 };
 
 #endif // INSERTIONBINARY_JOBSEEKER_HPP
