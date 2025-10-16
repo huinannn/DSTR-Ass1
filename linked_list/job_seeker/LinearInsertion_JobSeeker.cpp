@@ -1,4 +1,4 @@
-#include "Job_seeker_setA.hpp"
+#include "LinearInsertion_JobSeeker.hpp"
 
 void SkillList::add(const string& skill, double weight) {
     skills[size] = skill;
@@ -254,12 +254,10 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                     cout << "\n=============================\n";
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
-                    cout << "Skill Matching Time: " << matchDuration << " ms\n";
                     cout << "Linear Search Time: " << searchDuration << " ms\n";
                     cout << "Insertion Sort Time: " << sortDuration << " ms\n";
                     cout << "Linear Search Memory: " << (searchMemoryKB / 1024.0) << " KB\n";
-                    cout << "Insertion Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n";
-                    cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n\n";
+                    cout << "Insertion Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
                     cout.unsetf(ios::fixed);
                 } else {
                     cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
