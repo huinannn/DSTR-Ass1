@@ -231,9 +231,9 @@ void runJobSeekerSystem() {
                 cout << "Skill Matching Time: " << fixed << setprecision(3) << matchTime << " ms\n";
                 cout << "Binary Search Time: " << fixed << setprecision(3) << binaryTime << " ms\n";
                 cout << "Insertion Sort Time: " << fixed << setprecision(3) << sortTime << " ms\n";
-                cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";
                 cout << "Binary Search Memory: " << (binaryMemory / 1024.0) << " KB\n";
                 cout << "Insertion Sort Memory: " << (sortMemory / 1024.0) << " KB\n";
+                cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 running = false;
