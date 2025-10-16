@@ -1,53 +1,24 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iomanip>
-#include <algorithm>
-#include <chrono>
-#ifdef _WIN32
-    #include <windows.h>
-    #include <psapi.h>
-#else
-    #include <unistd.h>
-    #include <fstream>
-#endif
-using namespace std;
-using namespace std::chrono;
+#include "job_seeker_setB.hpp"
 
-struct SkillList {
-    string skills[100];
-    double weights[100];
-    int size = 0;
+void SkillList::add(const string& skill, double weight) {
+    for (int i = 0; i < size; ++i)
+        if (skills[i] == skill) return;
+    skills[size] = skill;
+    weights[size] = weight;
+    size++;
+}
 
-    void add(const string& skill, double weight = 0.0) {
-        for (int i = 0; i < size; ++i)
-            if (skills[i] == skill) return;
-        skills[size] = skill;
-        weights[size] = weight;
-        size++;
-    }
+bool SkillList::contains(const string& skill) const {
+    for (int i = 0; i < size; ++i)
+        if (skills[i] == skill) return true;
+    return false;
+}
 
-    bool contains(const string& skill) const {
-        for (int i = 0; i < size; ++i)
-            if (skills[i] == skill) return true;
-        return false;
-    }
-
-    double getWeight(const string& skill) const {
-        for (int i = 0; i < size; ++i)
-            if (skills[i] == skill) return weights[i];
-        return 0.0;
-    }
-};
-
-struct Job {
-    string title;
-    SkillList requiredSkills;
-    double matchScore;
-    Job* prev = nullptr;
-    Job* next = nullptr;
-};
+double SkillList::getWeight(const string& skill) const {
+    for (int i = 0; i < size; ++i)
+        if (skills[i] == skill) return weights[i];
+    return 0.0;
+}
 
 string toLowerCase(const string& str) {
     string lower = str;
@@ -97,12 +68,14 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
 
         if (!skillsString.empty() && skillsString.front() == '"')
             skillsString = skillsString.substr(1, skillsString.size() - 2);
-        
+
         stringstream skillsStream(skillsString);
         string skill;
         while (getline(skillsStream, skill, ',')) {
             while (!skill.empty() && skill.front() == ' ') skill.erase(skill.begin());
-            skills.add(toLowerCase(skill));
+            string lowerSkill = toLowerCase(skill);
+            skills.add(lowerSkill);
+            allValidSkills.add(lowerSkill); // ✅ add to global valid skills too
         }
 
         insertAtTail(head, title, skills);
@@ -110,6 +83,7 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
 
     file.close();
 }
+
 
 SkillList insertSkills(const SkillList& allValidSkills) {
     SkillList userSkills;
@@ -141,27 +115,34 @@ SkillList insertSkills(const SkillList& allValidSkills) {
 }
 
 // Optimized Linear Search for skill matching
-void updateAllMatchScores(Job* head, SkillList userSkills) {
+void updateAllMatchScores(Job* head, const SkillList& userSkills) {
     Job* temp = head;
-    double totalUserWeight = (userSkills.size * (userSkills.size + 1)) / 2.0;
-
     while (temp) {
         double matchedWeight = 0.0;
+        int skillCount = temp->requiredSkills.size;
 
-        for (int i = 0; i < temp->requiredSkills.size; ++i) {
-            const string& reqSkill = temp->requiredSkills.skills[i];
-            if (userSkills.contains(reqSkill))
-                matchedWeight += userSkills.getWeight(reqSkill);
+        // Calculate maximum possible weight for this job
+        double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
+
+        // Assign descending weights to job skills (like 5, 4, 3, 2, 1)
+        for (int i = 0; i < skillCount; ++i) {
+            const string& jobSkill = temp->requiredSkills.skills[i];
+            double weight = skillCount - i; // descending weight
+
+            if (userSkills.contains(jobSkill)) {
+                matchedWeight += weight;
+            }
         }
 
-        if (totalUserWeight > 0)
-            temp->matchScore = (matchedWeight / totalUserWeight) * 100.0;
+        if (maxWeight > 0)
+            temp->matchScore = (matchedWeight / maxWeight) * 100.0;
         else
             temp->matchScore = 0.0;
 
         temp = temp->next;
     }
 }
+
 // Merge Sort for Doubly Linked List
 Job* split(Job* head) {
     Job* fast = head, *slow = head;
@@ -219,53 +200,65 @@ void displayJobs(Job* head, double minScore) {
     cout << "\n";
 }
 
-void menu(Job*& head, const SkillList& allValidSkills) {
+void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
     int choice;
     SkillList userSkills;
 
     do {
-        cout << "==================================" << endl;
-        cout << "            Job Seeker            " << endl;
-        cout << "==================================" << endl;
+        cout << "====================================" << endl;
+        cout << "              Job Seeker            " << endl;
+        cout << "Optimized Linear Search & Merge Sort" << endl;
+        cout << "====================================" << endl;
         cout << "1. Insert Skills" << endl;
         cout << "2. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
 
         switch (choice) {
-        case 1: {
-            userSkills = insertSkills(allValidSkills);
+            case 1: {
+                userSkills = insertSkills(allValidSkills);
 
-            // Measure optimized search/matching
-            auto matchStart = high_resolution_clock::now();
-            updateAllMatchScores(head, userSkills);
-            auto matchEnd = high_resolution_clock::now();
-            double matchDuration = duration<double, milli>(matchEnd - matchStart).count();
-            double matchMemory = getMemoryUsageKB() / 1024.0; // MB
+                // Measure search/matching time & memory
+                auto matchStart = high_resolution_clock::now();
 
-            // Measure merge sort
-            auto sortStart = high_resolution_clock::now();
-            sortByScore(head);
-            auto sortEnd = high_resolution_clock::now();
-            double sortDuration = duration<double, milli>(sortEnd - sortStart).count();
-            double sortMemory = getMemoryUsageKB() / 1024.0; // MB
+                updateAllMatchScores(head, userSkills);
 
-            displayJobs(head, 0);
+                auto matchEnd = high_resolution_clock::now();
+                size_t matchEndMem = getMemoryUsageKB() - baselineMemory;
 
-            cout << fixed << setprecision(3);
-            cout << "\n=== Performance Report ===\n";
-            cout << "Optimized Match Time: " << matchDuration << " ms\n";
-            cout << "Match Memory: " << matchMemory << " MB\n";
-            cout << "Merge Sort Time: " << sortDuration << " ms\n";
-            cout << "Sort Memory: " << sortMemory << " MB\n\n";
-            break;
-        }
-        case 2:
-            cout << "Exiting program, have a nice day!" << endl;
-            break;
-        default:
-            cout << "Invalid choice. Please try again.\n";
-            break;
+                double matchDuration = duration<double, milli>(matchEnd - matchStart).count();
+                double matchMemory = static_cast<double>(matchEndMem) / 1024.0; // Convert to MB
+
+                // Measure sorting time & memory
+                auto sortStart = high_resolution_clock::now();
+
+                sortByScore(head);
+
+                auto sortEnd = high_resolution_clock::now();
+                size_t sortEndMem = getMemoryUsageKB() - baselineMemory;
+
+                double sortDuration = duration<double, milli>(sortEnd - sortStart).count();
+                double sortMemory = static_cast<double>(sortEndMem) / 1024; // Convert to MB
+
+                // Display jobs
+                displayJobs(head, 0);
+
+                // Performance report
+                cout << fixed << setprecision(3);
+                cout << "\n=== Performance Report ===\n";
+                cout << "Search / Match Time: " << matchDuration << " ms\n";
+                cout << "Search / Match Memory: " << matchMemory << " MB\n";
+                cout << "Sort Time: " << sortDuration << " ms\n";
+                cout << "Sort Memory: " << sortMemory << " MB\n\n";
+                cout.unsetf(ios::fixed);
+                break;
+            }
+            case 2:
+                cout << "Exiting program, have a nice day!" << endl;
+                break;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+                break;
         }
     } while (choice != 2);
 }
@@ -273,8 +266,9 @@ void menu(Job*& head, const SkillList& allValidSkills) {
 int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
+    size_t baselineMemory = getMemoryUsageKB();
 
     loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
-    menu(head, allValidSkills);
+    menu(head, allValidSkills, baselineMemory);
     return 0;
 }

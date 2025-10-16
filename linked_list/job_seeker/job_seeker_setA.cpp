@@ -1,55 +1,27 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iomanip>
-#include <algorithm>
-#include <chrono>
-#ifdef _WIN32
-    #include <windows.h>
-    #include <psapi.h>
-#else
-    #include <unistd.h>
-#endif
-using namespace std;
-using namespace std::chrono;
+#include "Job_seeker_setA.hpp"
 
-struct SkillList {
-    string skills[100];
-    double weights[100];
-    int size = 0;
+void SkillList::add(const string& skill, double weight) {
+    skills[size] = skill;
+    weights[size] = weight;
+    size++;
+}
 
-    void add(const string& skill, double weight = 0.0) {
-        skills[size] = skill;
-        weights[size] = weight;
-        size++;
-    }
+bool SkillList::contains(const string& skill) const {
+    for (int i = 0; i < size; ++i)
+        if (skills[i] == skill)
+            return true;
+    return false;
+}
 
-    bool contains(const string& skill) const {
-        for (int i = 0; i < size; ++i)
-            if (skills[i] == skill)
-                return true;
-        return false;
-    }
+double SkillList::getWeight(const string& skill) const {
+    for (int i = 0; i < size; ++i)
+        if (skills[i] == skill)
+            return weights[i];
+    return 0.0;
+}
 
-    double getWeight(const string& skill) const {
-        for (int i = 0; i < size; ++i)
-            if (skills[i] == skill)
-                return weights[i];
-        return 0.0;
-    }
-};
-
-struct Job {
-    string title;
-    SkillList requiredSkills;
-    double matchScore;
-    Job* prev = nullptr;
-    Job* next = nullptr;
-
-    Job(const string& t, const SkillList& skills = {}, double score = 0.0)
-        : title(t), requiredSkills(skills), matchScore(score) {}
-};
+Job::Job(const string& t, const SkillList& skills, double score)
+    : title(t), requiredSkills(skills), matchScore(score), prev(nullptr), next(nullptr) {}
 
 string toLowerCase(const string& str) {
     string lower = str;
@@ -62,7 +34,7 @@ size_t getMemoryUsageKB() {
 #ifdef _WIN32
     PROCESS_MEMORY_COUNTERS_EX pmc;
     GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-    return pmc.WorkingSetSize / 1024; // KB
+    return pmc.WorkingSetSize / 1024;
 #else
     long rss = 0L;
     ifstream statm("/proc/self/statm");
@@ -161,28 +133,34 @@ SkillList insertSkills(const SkillList& allValidSkills) {
     return userSkills;
 }
 
-void updateAllMatchScores(Job* head, SkillList userSkills) {
+void updateAllMatchScores(Job* head, const SkillList& userSkills) {
     Job* temp = head;
     while (temp) {
         double matchedWeight = 0.0;
-        double totalUserWeight = (userSkills.size * (userSkills.size + 1)) / 2.0;
+        int skillCount = temp->requiredSkills.size;
 
-        for (int i = 0; i < temp->requiredSkills.size; ++i) {
-            const string& reqSkill = temp->requiredSkills.skills[i];
+        // Calculate maximum possible weight for this job
+        double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
 
-            if (userSkills.contains(reqSkill)) {
-                matchedWeight += userSkills.getWeight(reqSkill);
+        // Assign descending weights to job skills (like 5, 4, 3, 2, 1)
+        for (int i = 0; i < skillCount; ++i) {
+            const string& jobSkill = temp->requiredSkills.skills[i];
+            double weight = skillCount - i; // descending weight
+
+            if (userSkills.contains(jobSkill)) {
+                matchedWeight += weight;
             }
         }
 
-        if (totalUserWeight > 0)
-            temp->matchScore = (matchedWeight / totalUserWeight) * 100.0;
+        if (maxWeight > 0)
+            temp->matchScore = (matchedWeight / maxWeight) * 100.0;
         else
             temp->matchScore = 0.0;
 
         temp = temp->next;
     }
 }
+
 
 void sortByScore(Job*& head) {
     if (!head) return;
@@ -230,13 +208,14 @@ void displayJobs(Job* head, double minScore) {
     cout << endl;
 }
 
-void menu(Job*& head, const SkillList& allValidSkills) {
+void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory) {
     int choice;
     SkillList userSkills;
 
     do {
         cout << "==================================" << endl;
         cout << "            Job Seeker            " << endl;
+        cout << "  Linear Search & Insertion Sort  " << endl;
         cout << "==================================" << endl;
         cout << "1. Insert Skills" << endl;
         cout << "2. Exit" << endl;
@@ -249,17 +228,25 @@ void menu(Job*& head, const SkillList& allValidSkills) {
 
                 // Measure search/matching time & memory
                 auto matchStart = high_resolution_clock::now();
+
                 updateAllMatchScores(head, userSkills);
+
                 auto matchEnd = high_resolution_clock::now();
+                size_t matchEndMem = getMemoryUsageKB() - baselineMemory;
+
                 double matchDuration = duration<double, milli>(matchEnd - matchStart).count();
-                double matchMemory = getMemoryUsageKB() / 1024.0; // Convert to MB
+                double matchMemory = static_cast<double>(matchEndMem) / 1024.0; // Convert to MB
 
                 // Measure sorting time & memory
                 auto sortStart = high_resolution_clock::now();
+
                 sortByScore(head);
+
                 auto sortEnd = high_resolution_clock::now();
+                size_t sortEndMem = getMemoryUsageKB() - baselineMemory;
+
                 double sortDuration = duration<double, milli>(sortEnd - sortStart).count();
-                double sortMemory = getMemoryUsageKB() / 1024.0; // Convert to MB
+                double sortMemory = static_cast<double>(sortEndMem) / 1024; // Convert to MB
 
                 // Display jobs
                 displayJobs(head, 0);
@@ -288,8 +275,9 @@ void menu(Job*& head, const SkillList& allValidSkills) {
 int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
+    size_t baselineMemory = getMemoryUsageKB();
 
     loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
-    menu(head, allValidSkills);
+    menu(head, allValidSkills, baselineMemory);
     return 0;
 }
