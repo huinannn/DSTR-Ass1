@@ -8,12 +8,6 @@
 #include <iomanip>
 #include <algorithm>
 #include <chrono>
-#ifdef _WIN32
-    #include <windows.h>
-    #include <psapi.h>
-#else
-    #include <unistd.h>
-#endif
 using namespace std;
 using namespace std::chrono;
 
@@ -38,7 +32,6 @@ struct Job {
 };
 
 string toLowerCase(const string& str);
-size_t getMemoryUsageKB();
 
 void insertAtTail(Job*& head, string title, SkillList skills);
 void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkills);
