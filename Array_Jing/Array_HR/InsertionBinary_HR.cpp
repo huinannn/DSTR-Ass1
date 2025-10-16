@@ -276,10 +276,10 @@ void HRSystem::searchAndMatch() {
                 cout << "\n----- Performance Summary -----\n";
                 cout << "Binary Search Time: " << fixed << setprecision(3) << binaryTime << " ms\n";
                 cout << "Binary Search Memory: " << binaryMemory / 1024.0 << " KB\n";
-                cout << "Candidate Matching Time: " << fixed << setprecision(3) << matchingTime << " ms\n";
+                /*cout << "Candidate Matching Time: " << fixed << setprecision(3) << matchingTime << " ms\n";*/
                 cout << "Insertion Sort Time: " << fixed << setprecision(3) << insertionTime << " ms\n";
                 cout << "Insertion Sort Memory: " << sortMemory / 1024.0 << " KB\n";
-                cout << "Approx. Base Memory: " << baseMemory / 1024.0 << " KB\n";
+                /*cout << "Approx. Base Memory: " << baseMemory / 1024.0 << " KB\n";*/
             }
             else if (choice == 3) {
                 cout << "\nExiting HR System...\n";
@@ -295,8 +295,8 @@ void HRSystem::searchAndMatch() {
 // ---------- Run ----------
 void runHRSystem() {
     HRSystem hr;
-    hr.loadJobs("../../job_description/mergejob.csv");
-    hr.loadCandidates("../../resume/candidates.csv");
+    hr.loadJobs("job_description/mergejob.csv");
+    hr.loadCandidates("resume/candidates.csv");
     hr.searchAndMatch();
 }
 
