@@ -70,6 +70,10 @@ public:
     // Performance getters
     int getJobCount() const { return jobCount; }
     int getCandidateCount() const { return candCount; }
+
+    // Memory calculation helpers
+    size_t calculateBaseMemory() const;
+    size_t calculateMatchingMemory(int selectedCount) const;
 };
 
 // Run system

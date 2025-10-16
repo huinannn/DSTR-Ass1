@@ -71,7 +71,7 @@ void HRSystem::loadCandidates(const string &filename) {
         getline(ss, skillsLine);
 
         candidates[candCount].name = trim(name);
-        candidates[candCount].skillCount = 0; // Initialize skill count
+        candidates[candCount].skillCount = 0;
 
         stringstream skillStream(skillsLine);
         string skill;
@@ -128,13 +128,15 @@ int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t
 
     auto end = high_resolution_clock::now();
     binaryTime = duration<double, milli>(end - start).count();
-    binaryMemory = sizeof(*this) + jobCount * sizeof(JobHR) + candCount * sizeof(Candidate);
+
+    // Approximate memory for search variables
+    binaryMemory = sizeof(int) * 3 + sizeof(string) * 1;
 
     return result;
 }
 
 // ---------- Insertion Sort ----------
-void HRSystem::insertionSortTimed(double &insertionTime, size_t &insertionMemory) {
+void HRSystem::insertionSortTimed(double &insertionTime, size_t &sortMemory) {
     auto start = high_resolution_clock::now();
 
     for (int i = 1; i < candCount; i++) {
@@ -149,16 +151,15 @@ void HRSystem::insertionSortTimed(double &insertionTime, size_t &insertionMemory
 
     auto end = high_resolution_clock::now();
     insertionTime = duration<double, milli>(end - start).count();
-    insertionMemory = sizeof(*this) + jobCount * sizeof(JobHR) + candCount * sizeof(Candidate);
+
+    sortMemory = sizeof(Candidate) * candCount + sizeof(int) * 2;
 }
 
 // ---------- Search & Match ----------
 void HRSystem::searchAndMatch() {
     auto systemStart = high_resolution_clock::now();
 
-    // Approx base memory
-    size_t baseMemory = sizeof(*this) + jobCount * sizeof(JobHR) + candCount * sizeof(Candidate);
-    cout << "Approx. Base Memory: " << baseMemory / 1024.0 << " KB\n";
+    size_t baseMemory = sizeof(*this) + sizeof(JobHR) * jobCount + sizeof(Candidate) * candCount;
 
     while (true) {
         displayJobs();
@@ -169,7 +170,7 @@ void HRSystem::searchAndMatch() {
         jobInput = toLower(trim(jobInput));
 
         double binaryTime, insertionTime, matchingTime;
-        size_t binaryMemory, insertionMemory;
+        size_t binaryMemory, sortMemory;
 
         int jobIndex = binarySearchTimed(jobInput, binaryTime, binaryMemory);
         if (jobIndex == -1) {
@@ -257,7 +258,7 @@ void HRSystem::searchAndMatch() {
         matchingTime = duration<double, milli>(matchEnd - matchStart).count();
 
         // ---------- Sort ----------
-        insertionSortTimed(insertionTime, insertionMemory);
+        insertionSortTimed(insertionTime, sortMemory);
 
         displayTop5();
 
@@ -273,22 +274,20 @@ void HRSystem::searchAndMatch() {
             if (choice == 1) break;
             else if (choice == 2) {
                 cout << "\n----- Performance Summary -----\n";
-                
                 cout << "Binary Search Time: " << fixed << setprecision(3) << binaryTime << " ms\n";
                 cout << "Binary Search Memory: " << binaryMemory / 1024.0 << " KB\n";
                 cout << "Candidate Matching Time: " << fixed << setprecision(3) << matchingTime << " ms\n";
                 cout << "Insertion Sort Time: " << fixed << setprecision(3) << insertionTime << " ms\n";
-                cout << "Insertion Sort Memory: " << insertionMemory / 1024.0 << " KB\n";
-                cout << "Approx. Base Memory: " << fixed << setprecision(3) << baseMemory / 1024.0 << " KB\n";
+                cout << "Insertion Sort Memory: " << sortMemory / 1024.0 << " KB\n";
+                cout << "Approx. Base Memory: " << baseMemory / 1024.0 << " KB\n";
             }
             else if (choice == 3) {
-                cout << "\nThank you for using the HR System!\n";
+                cout << "\nExiting HR System...\n";
                 auto systemEnd = high_resolution_clock::now();
                 double totalSystemTime = duration<double, milli>(systemEnd - systemStart).count();
                 cout << "Total Session Runtime: " << totalSystemTime << " ms\n";
                 return;
-            }
-            else cout << "❌ Invalid choice. Enter 1-3.\n";
+            } else cout << "❌ Invalid choice. Enter 1-3.\n";
         }
     }
 }
