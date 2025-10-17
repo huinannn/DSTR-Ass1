@@ -368,16 +368,13 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
     int candidateCount = 0;
     int candidateSkillCount = 0;
     int roleSkillCount = 0;
-
     for (SkillNode* s = role->skills; s; s = s->next)
         roleSkillCount++;
-
     for (Candidate* c = candidates; c; c = c->next) {
         c->matchedSkillCount = 0;
         c->weightedScore = 0;
         c->score = 0.0;
         idx = 0;
-
         for (SkillNode* s = searchSkills; s; s = s->next, idx++) {
             for (SkillNode* cSkill = c->skills; cSkill; cSkill = cSkill->next) {
                 if (Utils::toLower(s->skill) == Utils::toLower(cSkill->skill)) {
@@ -388,7 +385,6 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
             }
         }
         c->score = (totalWeight > 0) ? (double(c->weightedScore) / totalWeight) * 100.0 : 0.0;
-
         candidateCount++;
         for (SkillNode* cSkill = c->skills; cSkill; cSkill = cSkill->next)
             candidateSkillCount++;
@@ -401,8 +397,13 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
     auto endSort = chrono::high_resolution_clock::now();
     double mergeTime = chrono::duration<double, std::milli>(endSort - startSort).count();
 
-    size_t optimizedMemory = sizeof(int) * 3 + sizeof(string) * 1;
-    size_t mergeMemory = sizeof(Candidate) * candidateCount + sizeof(int) * 2; 
+    int selectedCount = Utils::countSkills(searchSkills);
+    int jobCount = 0;
+    for (Candidate* c = candidates; c; c = c->next) {
+        jobCount++;
+    }
+    size_t optimizedMemory = sizeof(SkillNode*) * 3 + sizeof(string) * (selectedCount + 1);
+    size_t mergeMemory =  sizeof(Candidate*) * 3 + sizeof(Candidate) * jobCount + (jobCount/2) * sizeof(Candidate*);
 
     delete[] weights;
     return { sorted, optimizedTime, mergeTime, optimizedMemory, mergeMemory };
@@ -448,7 +449,10 @@ bool exitProgram = false;
 
         int totalMatch = 0;
         for (Candidate* c = result.sortedCandidates; c; c = c->next)
-            if (c->matchedSkillCount > 0) totalMatch++;
+            if (c->matchedSkillCount > 0) {
+                totalMatch++;
+            }
+
         cout << "Total Matching Candidates: " << totalMatch << endl << endl;
         cout << "Top 5 candidates:" << endl;
         cout << "------------------------------------------------------------" << endl;
@@ -461,13 +465,14 @@ bool exitProgram = false;
                 cout << left << setw(22) << c->name << setw(17) << c->matchedSkillCount<< setw(13) << c->weightedScore << fixed << setprecision(2) << c->score << endl;
             }
         }
+
         while (!exitProgram) {
             cout << endl << "[ ACTION ]" << endl;
             cout << "1. Performance Summary" << endl;
             cout << "2. Continue Search Skills & Match Candidates" << endl;
             cout << "3. Exit" << endl << endl;
             string postChoice = InputUtils::getInput("Enter your choice (1-3): ", "1", "2", "3");
-
+            
             if (postChoice == "1") {
                 cout << endl << "============ PERFORMANCE SUMMARY ==============" << endl;
                 cout << "Optimized Linear Search Time   : " << fixed << setprecision(3) << result.searchTimeMS << " ms" << endl;

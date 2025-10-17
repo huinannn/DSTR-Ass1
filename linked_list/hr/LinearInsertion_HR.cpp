@@ -345,7 +345,6 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
         c->weightedScore = 0;
         c->score = 0.0;
         idx = 0;
-
         for (SkillNode* s = searchSkills; s; s = s->next, idx++) {
             for (SkillNode* cSkill = c->skills; cSkill; cSkill = cSkill->next) {
                 if (Utils::toLower(s->skill) == Utils::toLower(cSkill->skill)) {
@@ -356,7 +355,6 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
             }
         }
         c->score = (totalWeight > 0) ? (double(c->weightedScore) / totalWeight) * 100.0 : 0.0;
-
         candidateCount++;
         for (SkillNode* cSkill = c->skills; cSkill; cSkill = cSkill->next)
             candidateSkillCount++;
@@ -369,8 +367,13 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
     auto endSort = chrono::high_resolution_clock::now();
     double insertionTime = chrono::duration<double, std::milli>(endSort - startSort).count();
 
-    size_t linearMemory = sizeof(int) * 3 + sizeof(string) * 1;
-    size_t insertionMemory = sizeof(Candidate) * candidateCount + sizeof(int) * 2; 
+    int selectedCount = Utils::countSkills(searchSkills);
+    int jobCount = 0;
+    for (Candidate* c = candidates; c; c = c->next) {
+        jobCount++;
+    }
+    size_t linearMemory = sizeof(SkillNode*) * 2 + sizeof(string) * (selectedCount + 1);
+    size_t insertionMemory = sizeof(Candidate*) * 3 + sizeof(Candidate) * jobCount;
 
     delete[] weights;
     return { sorted, linearTime, insertionTime, linearMemory, insertionMemory };
@@ -416,7 +419,9 @@ void linear_insertion() {
 
         int totalMatch = 0;
         for (Candidate* c = result.sortedCandidates; c; c = c->next)
-            if (c->matchedSkillCount > 0) totalMatch++;
+            if (c->matchedSkillCount > 0) {
+                totalMatch++;
+            }
         cout << "Total Matching Candidates: " << totalMatch << endl << endl;
         cout << "Top 5 candidates:" << endl;
         cout << "------------------------------------------------------------" << endl;
@@ -429,6 +434,7 @@ void linear_insertion() {
                 cout << left << setw(22) << c->name << setw(17) << c->matchedSkillCount << setw(13) << c->weightedScore << fixed << setprecision(2) << c->score << endl;
             }
         }
+
         while (!exitProgram) {
             cout << endl << "[ ACTION ]" << endl;
             cout << "1. Performance Summary" << endl;
