@@ -34,10 +34,10 @@ struct JobRole {
 
 struct MatchResult {
     Candidate* sortedCandidates;
-    double searchTimeMs;
-    double sortTimeMs;
-    size_t searchMemoryBytes;
-    size_t sortMemoryBytes;
+    double searchTimeMS;
+    double sortTimeMS;
+    size_t searchMemoryKB;
+    size_t sortMemoryKB;
 };
 
 class Utils {

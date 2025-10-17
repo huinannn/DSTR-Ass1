@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 using namespace std;
 
 struct SkillNode {
