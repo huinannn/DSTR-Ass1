@@ -2,9 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <map>
-#include <set>
 #include <algorithm>
+#include <cctype>
 using namespace std;
 
 // Clean up text: remove punctuation and trim spaces
@@ -19,6 +18,86 @@ string cleanWord(string word) {
     return cleaned;
 }
 
+// Structure to store one job and its skills
+struct Job {
+    string title;
+    string skills[100];
+    int skillCount = 0;
+};
+
+// Custom container to hold all jobs
+struct JobContainer {
+    Job jobs[100];
+    int jobCount = 0;
+    // Add a job title if not exists
+    int addJob(const string& title) {
+        for (int i = 0; i < jobCount; ++i) {
+            if (jobs[i].title == title)
+                return i; // already exists
+        }
+        jobs[jobCount].title = title;
+        jobCount++;
+        return jobCount - 1;
+    }
+
+    // Add a skill to a specific job (ignore duplicates)
+    void addSkill(int jobIndex, const string& skill) {
+        if (skill.empty()) return;
+        for (int i = 0; i < jobs[jobIndex].skillCount; ++i) {
+            if (jobs[jobIndex].skills[i] == skill)
+                return; // duplicate
+        }
+        jobs[jobIndex].skills[jobs[jobIndex].skillCount++] = skill;
+    }
+
+    // Sort jobs alphabetically
+    void sortJobs() {
+        for (int i = 0; i < jobCount - 1; ++i) {
+            for (int j = i + 1; j < jobCount; ++j) {
+                if (jobs[i].title > jobs[j].title) {
+                    swap(jobs[i], jobs[j]);
+                }
+            }
+        }
+    }
+
+    // Sort skills for each job alphabetically
+    void sortSkills() {
+        for (int i = 0; i < jobCount; ++i) {
+            for (int j = 0; j < jobs[i].skillCount - 1; ++j) {
+                for (int k = j + 1; k < jobs[i].skillCount; ++k) {
+                    if (jobs[i].skills[j] > jobs[i].skills[k]) {
+                        swap(jobs[i].skills[j], jobs[i].skills[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    // Save all jobs and skills to CSV
+    void saveToCSV(const string& filename) {
+        ofstream output(filename);
+        if (!output.is_open()) {
+            cout << "Failed to create " << filename << "!" << endl;
+            return;
+        }
+
+        for (int i = 0; i < jobCount; ++i) {
+            output << jobs[i].title << ",\"";
+            for (int j = 0; j < jobs[i].skillCount; ++j) {
+                output << jobs[i].skills[j];
+                if (j != jobs[i].skillCount - 1)
+                    output << ", ";
+            }
+            output << "\"";
+            if (i != jobCount - 1) {
+                output << endl;
+            }
+        }
+        output.close();
+    }
+};
+
 int main() {
     // Open to job_description.csv
     ifstream file("job_description.csv");
@@ -27,12 +106,13 @@ int main() {
         return 1;
     }
 
-    // Sort alphabetically
-    map<string, set<string>> jobSkills;
+    JobContainer jc;
     string line;
 
     while (getline(file, line)) {
-        if (line.empty()) continue;
+        if (line.empty()) {
+            continue;
+        }
 
         // Remove quotes
         if (line.front() == '"' && line.back() == '"')
@@ -41,60 +121,39 @@ int main() {
         stringstream ss(line);
         string word1, word2;
         ss >> word1 >> word2;
-
         // Keep original capitalization
         string jobTitle = cleanWord(word1 + " " + word2);
 
         // Find "with experience in"
         size_t pos = line.find("with experience in");
-        if (pos == string::npos) continue;
+        if (pos == string::npos) {
+            continue;
+        }
 
         // Skip "with experience in"
         string skillsPart = line.substr(pos + 18);
-
         // Stop before the first period
         size_t endPos = skillsPart.find('.');
         if (endPos != string::npos)
             skillsPart = skillsPart.substr(0, endPos);
 
+        int jobIndex = jc.addJob(jobTitle);
+
         stringstream skillsStream(skillsPart);
         string skill;
         while (getline(skillsStream, skill, ',')) {
             skill = cleanWord(skill);
-            if (skill.size() > 1)
-                jobSkills[jobTitle].insert(skill);
+            jc.addSkill(jobIndex, skill);
         }
     }
 
     file.close();
 
-    // Write to mergejob.csv
-    ofstream output("mergejob.csv");
-    if (!output.is_open()) {
-        cout << "Failed to create mergejob.csv!" << endl;
-        return 1;
-    }
+    jc.sortJobs();
+    jc.sortSkills();
+    jc.saveToCSV("mergejob.csv");
 
-    int jobCount = 0;
-    int totalJobs = jobSkills.size();
-    for (auto it = jobSkills.begin(); it != jobSkills.end(); ++it) {
-        ++jobCount;
-        output << it->first << ",\"";
-        int count = 0;
-        int total = it->second.size();
-        for (auto s = it->second.begin(); s != it->second.end(); ++s) {
-            ++count;
-            output << *s;
-            if (count != total) output << ", ";
-        }
-        output << "\"";
-        if (jobCount != totalJobs)
-            output << endl;
-    }
-
-    output.close();
-
-    cout << "✅ Job Description data cleaning completed successfully!" << endl;
+    cout << "Job Description data cleaning completed successfully!" << endl;
     cout << "Output saved to mergejob.csv." << endl;
 
     return 0;
