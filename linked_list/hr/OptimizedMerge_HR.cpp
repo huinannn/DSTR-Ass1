@@ -53,17 +53,6 @@ int Utils::countSkills(SkillNode* head) {
     return count;
 }
 
-bool Utils::skillExists(SkillNode* head, const string& target) {
-    string t = toLower(target);
-    while (head) {
-        if (toLower(head->skill) == t) {
-            return true;
-        }
-        head = head->next;
-    }
-    return false;
-}
-
 SkillNode* Utils::buildSkillList(const string& input, SkillNode* jobRoleSkills) {
     stringstream ss(input);
     string token;
@@ -274,12 +263,24 @@ JobRole* InputUtils::getValidJobRole(JobRole* jobs) {
     for (JobRole* temp = jobs; temp; temp = temp->next)
         cout << " " << index++ << ". " << temp->roleName << endl;
     cout << endl;
+
     JobRole* role = nullptr;
+    int totalJobs = index - 1;
     while (!role) {
-        string searchRole = InputUtils::getInput("Enter the job role to search: ");
-        role = OptimizedLinearSearch::findRole(jobs, searchRole);
-        if (!role) {
-            cout << "Role not found! Please try again." << endl << endl;
+        string input = InputUtils::getInput("Enter the job number to search (1-" + to_string(totalJobs) + "): ");
+        stringstream ss(input);
+        int choice;
+        if (ss >> choice && !(ss >> ws) && choice >= 1 && choice <= totalJobs) {
+            int i = 1;
+            for (JobRole* temp = jobs; temp; temp = temp->next) {
+                if (i == choice) {
+                    role = temp;
+                    break;
+                }
+                i++;
+            }
+        } else {
+            cout << "Invalid input! Enter numbers between 1 and " << totalJobs << "." << endl << endl;
         }
     }
     return role;
@@ -289,27 +290,50 @@ string InputUtils::getSkillsInput(JobRole* role) {
     cout << endl << "============== ROLE INFORMATION ===============" << endl;
     cout << "Job Role: " << role->roleName << endl;
     cout << "Required Skills: " << endl;
+
     int idx = 1;
-    for (SkillNode* s = role->skills; s; s = s->next)
-        cout << " " << idx++ << ". " << s->skill << endl;
+    for (SkillNode* s = role->skills; s; s = s->next, idx++)
+        cout << " " << idx << ". " << s->skill << endl;
     cout << endl;
+
+    int totalSkills = idx - 1;
     string input;
     while (true) {
-        input = InputUtils::getInput("Enter skills to match (separated by comma): ");
-        stringstream ss(input);
-        string skill;
-        bool allInvalid = true;
-        while (getline(ss, skill, ',')) {
-            skill = Utils::trim(skill);
-            if (Utils::skillExists(role->skills, skill)) {
-                allInvalid = false;
+        string choiceInput = InputUtils::getInput("Enter skill numbers to match (separated by comma): ");
+        stringstream ss(choiceInput);
+        string token;
+        SkillNode* selectedSkills = nullptr;
+        bool invalid = false;
+
+        while (getline(ss, token, ',')) {
+            token = Utils::trim(token); 
+            stringstream ts(token);
+            int num;
+            if (ts >> num && !(ts >> ws) && num >= 1 && num <= totalSkills) {
+                int i = 1;
+                for (SkillNode* s = role->skills; s; s = s->next, i++) {
+                    if (i == num) {
+                        selectedSkills = Utils::addSkill(selectedSkills, s->skill);
+                        break;
+                    }
+                }
+            } else {
+                invalid = true;
                 break;
             }
         }
-        if (allInvalid) {
-            cout << "No such skill for this role! Please try again." << endl << endl;
+
+        if (!selectedSkills || invalid) {
+            cout << "Invalid input! Enter numbers between 1 and " << totalSkills << "." << endl << endl;
             continue;
         }
+
+        string skillStr;
+        for (SkillNode* s = selectedSkills; s; s = s->next) {
+            skillStr += s->skill;
+            if (s->next) skillStr += ",";
+        }
+        input = skillStr;
         break;
     }
     return input;
@@ -329,12 +353,12 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
             input = Utils::trim(input);
             stringstream ss(input);
             if (input.empty()) {
-                cout << "Input cannot be empty!" << endl;
+                cout << "Input cannot be empty!" << endl << endl;
                 continue;
             }
             if (ss >> weight && !(ss >> ws) && weight >= 1 && weight <= 10)
                 break;
-            cout << "Invalid input! Enter 1-10." << endl;
+            cout << "Invalid input! Enter numbers between 1 and 10." << endl << endl;
         }
         weights[idx] = weight;
         totalWeight += weight;

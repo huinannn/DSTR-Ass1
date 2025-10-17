@@ -48,7 +48,6 @@ public:
     static string normalizeSkill(const string& s);
     static SkillNode* addSkill(SkillNode* head, const string& skill);
     static int countSkills(SkillNode* head);
-    static bool skillExists(SkillNode* head, const string& target);
     static SkillNode* buildSkillList(const string& input, SkillNode* jobRoleSkills);
     static void sortSkills(SkillNode*& head);
 };
