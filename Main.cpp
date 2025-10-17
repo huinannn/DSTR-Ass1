@@ -2,8 +2,52 @@
 #include <string>
 #include <cstdlib> // for system()
 #include <limits>
+#include <algorithm>
 
 using namespace std;
+
+// Function to get compile/run commands based on role, structure, algorithm
+void getCompileRunCommands(const string &role, const string &structure, const string &algorithm, string &compileCmd, string &runCmd) {
+#ifdef _WIN32
+    string exeExt = ".exe";
+#else
+    string exeExt = "";
+#endif
+
+    if (role == "hr") {
+        if (structure == "array") {
+            if (algorithm.find("1") != string::npos || (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos))
+                compileCmd = "g++ ./Array_Jing/Array_HR/InsertionBinary_HR.cpp -o HR" + exeExt;
+            else
+                compileCmd = "g++ ./Array_Xin/HR/MergeJump_HR.cpp -o HR" + exeExt;
+            runCmd = "HR" + exeExt;
+        } else { // linked list
+            if (algorithm.find("1") != string::npos || (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos))
+                compileCmd = "g++ ./linked_list/hr/LinearInsertion_HR.cpp -o HR" + exeExt;
+            else
+                compileCmd = "g++ ./linked_list/hr/OptimizedMerge_HR.cpp -o HR" + exeExt;
+            runCmd = "HR" + exeExt;
+        }
+    } else { // job seeker
+        if (structure == "array") {
+            if (algorithm.find("1") != string::npos || (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos))
+                compileCmd = "g++ ./Array_Jing/Array_jobseeker/InsertionBinary_JobSeeker.cpp -o JobSeeker" + exeExt;
+            else
+                compileCmd = "g++ ./Array_Xin/Job_Seeker/MergeJump_JobSeeker.cpp -o JobSeeker" + exeExt;
+            runCmd = "JobSeeker" + exeExt;
+        } else { // linked list
+            if (algorithm.find("1") != string::npos || (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos))
+                compileCmd = "g++ ./linked_list/job_seeker/LinearInsertion_JobSeeker.cpp -o JobSeeker" + exeExt;
+            else
+                compileCmd = "g++ ./linked_list/job_seeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker" + exeExt;
+            runCmd = "JobSeeker" + exeExt;
+        }
+    }
+
+#ifndef _WIN32
+    runCmd = "./" + runCmd; // Unix-style prefix
+#endif
+}
 
 int main() {
     while (true) {
@@ -16,27 +60,39 @@ int main() {
         // Step 1: Choose Role
         while (true) {
             cout << "Choose your role:\n";
-            cout << "1. HR\n";
-            cout << "2. Job Seeker\n";
-            cout << "Enter your choice (HR/Job Seeker): ";
+            cout << "1. HR\n2. Job Seeker\n";
+            cout << "Enter your choice (HR/Job Seeker or 1/2): ";
             getline(cin, role);
-            for (auto &c : role) c = tolower(c);
+            transform(role.begin(), role.end(), role.begin(), ::tolower);
 
-            if (role == "hr" || role == "job seeker") break;
-            cout << "❌ Invalid role. Try again.\n\n";
+            if (role == "hr" || role == "1") {
+                role = "hr";
+                break;
+            } else if (role == "job seeker" || role == "2") {
+                role = "job seeker";
+                break;
+            } else {
+                cout << "❌ Invalid role. Try again.\n\n";
+            }
         }
 
         // Step 2: Choose Data Structure
         while (true) {
             cout << "\nChoose Data Structure:\n";
-            cout << "1. Array\n";
-            cout << "2. Linked List\n";
-            cout << "Enter your choice (array/linked list): ";
+            cout << "1. Array\n2. Linked List\n";
+            cout << "Enter your choice (array/linked list or 1/2): ";
             getline(cin, structure);
-            for (auto &c : structure) c = tolower(c);
+            transform(structure.begin(), structure.end(), structure.begin(), ::tolower);
 
-            if (structure == "array" || structure == "linked list" || structure == "link list") break;
-            cout << "❌ Invalid data structure. Try again.\n\n";
+            if (structure == "array" || structure == "1") {
+                structure = "array";
+                break;
+            } else if (structure == "linked list" || structure == "link list" || structure == "2") {
+                structure = "linked list";
+                break;
+            } else {
+                cout << "❌ Invalid data structure. Try again.\n\n";
+            }
         }
 
         // Step 3: Choose Algorithm
@@ -50,79 +106,17 @@ int main() {
                 cout << "1. Linear Search and Insertion Sort\n";
                 cout << "2. Optimized Linear Search and Merge Sort\n";
             }
-            cout << "Enter your choice: ";
+            cout << "Enter your choice (1/2): ";
             getline(cin, algorithm);
-            for (auto &c : algorithm) c = tolower(c);
 
-            if (!algorithm.empty()) break;
+            if (algorithm == "1" || algorithm == "2") break;
             cout << "❌ Invalid input. Try again.\n";
         }
 
         cout << "\n-----------------------------------------\n";
 
         string compileCmd, runCmd;
-
-        // ROLE: HR
-        if (role == "hr") {
-            if (structure == "array") {
-                if (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos) {
-#ifdef _WIN32
-                    compileCmd = "g++ ./Array_Jing/Array_HR/InsertionBinary_HR.cpp -o HR.exe";
-                    runCmd = "HR.exe";
-#else
-                    compileCmd = "g++ ./Array_Jing/Array_HR/InsertionBinary_HR.cpp -o HR";
-                    runCmd = "./HR";
-#endif
-                } else {
-#ifdef _WIN32
-                    compileCmd = "g++ ./Array_Xin/HR/MergeJump_HR.cpp -o HR.exe";
-                    runCmd = "HR.exe";
-#else
-                    compileCmd = "g++ ./Array_Xin/HR/MergeJump_HR.cpp -o HR";
-                    runCmd = "./HR";
-#endif
-                }
-            } else { // linked list
-#ifdef _WIN32
-                compileCmd = "g++ ./Linked_list/Linked_HR/OptimizedMerge_HR.cpp -o HR.exe";
-                runCmd = "HR.exe";
-#else
-                compileCmd = "g++ ./Linked_list/Linked_HR/OptimizedMerge_HR.cpp -o HR";
-                runCmd = "./HR";
-#endif
-            }
-        }
-
-        // ROLE: Job Seeker
-        else {
-            if (structure == "array") {
-                if (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos) {
-#ifdef _WIN32
-                    compileCmd = "g++ ./Array_Jing/Array_jobseeker/InsertionBinary_JobSeeker.cpp -o JobSeeker.exe";
-                    runCmd = "JobSeeker.exe";
-#else
-                    compileCmd = "g++ ./Array_Jing/Array_jobseeker/InsertionBinary_JobSeeker.cpp -o JobSeeker";
-                    runCmd = "./JobSeeker";
-#endif
-                } else {
-#ifdef _WIN32
-                    compileCmd = "g++ ./Array_Xin/Job_Seeker/MergeJump_JobSeeker.cpp -o JobSeeker.exe";
-                    runCmd = "JobSeeker.exe";
-#else
-                    compileCmd = "g++ ./Array_Xin/Job_Seeker/MergeJump_JobSeeker.cpp -o JobSeeker";
-                    runCmd = "./JobSeeker";
-#endif
-                }
-            } else { // linked list
-#ifdef _WIN32
-                compileCmd = "g++ ./Linked_list/Linked_jobseeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker.exe";
-                runCmd = "JobSeeker.exe";
-#else
-                compileCmd = "g++ ./Linked_list/Linked_jobseeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker";
-                runCmd = "./JobSeeker";
-#endif
-            }
-        }
+        getCompileRunCommands(role, structure, algorithm, compileCmd, runCmd);
 
         cout << "Compiling selected module...\n";
         int compileResult = system(compileCmd.c_str());

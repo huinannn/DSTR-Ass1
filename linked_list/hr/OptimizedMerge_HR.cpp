@@ -406,8 +406,8 @@ bool exitProgram = false;
             }
         }
 
-        JobRole* jobs = FileLoader::loadJobs("../../job_description/mergejob.csv");
-        Candidate* candidates = FileLoader::loadCandidates("../../resume/candidates.csv");
+        JobRole* jobs = FileLoader::loadJobs("job_description/mergejob.csv");
+        Candidate* candidates = FileLoader::loadCandidates("resume/candidates.csv");
         JobRole* role = InputUtils::getValidJobRole(jobs);
         string skillInput = InputUtils::getSkillsInput(role);
         SkillNode* searchSkills = Utils::buildSkillList(skillInput, role->skills);
