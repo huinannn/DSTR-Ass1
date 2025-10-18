@@ -35,9 +35,11 @@ void insertAtTail(Job*& head, string title, SkillList skills);
 void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkills);
 SkillList insertSkills(const SkillList& allValidSkills);
 void updateAllMatchScores(Job* head, const SkillList& userSkills);
+Job* extractMatchedJobs(Job* head);
 
-Job* split(Job* head);
+void split(Job* source, Job** frontRef, Job** backRef);
 Job* merge(Job* first, Job* second);
+int countJobs(Job* head);
 Job* mergeSort(Job* head);
 void sortByScore(Job*& head);
 

@@ -51,7 +51,6 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
     }
 
     string line;
-    int jobCount = 0;
     while (getline(file, line)) {
         if (line.empty()) continue;
 
@@ -62,8 +61,6 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
         title = line.substr(0, commaPos);
         skillsString = line.substr(commaPos + 1);
 
-
-        // Remove surrounding quotes if present
         if (!skillsString.empty() && skillsString.front() == '"')
             skillsString = skillsString.substr(1, skillsString.size() - 2);
 
@@ -72,7 +69,6 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
         string skill;
 
         while (getline(skillsStream, skill, ',')) {
-            // trim
             skill.erase(0, skill.find_first_not_of(" \t"));
             skill.erase(skill.find_last_not_of(" \t") + 1);
             if (skill.empty()) continue;
@@ -85,7 +81,6 @@ void loadJobsFromCSV(Job*& head, const string& filename, SkillList& allValidSkil
         }
 
         insertAtTail(head, title, skills);
-        jobCount++;
     }
 
     file.close();
@@ -118,32 +113,17 @@ SkillList insertSkills(const SkillList& allValidSkills) {
     return userSkills;
 }
 
-void updateAllMatchScores(Job* head, const SkillList& userSkills, 
-                          double& searchTime, size_t& searchMemory) {
+void updateAllMatchScores(Job* head, const SkillList& userSkills) {
     Job* temp = head;
-
-    auto searchStart = chrono::high_resolution_clock::now();
-
-    size_t memoryUsed = 0;
-    int seekerSkillCount = userSkills.size;
-
-    // Base memory overhead: structures + loop counters
-    size_t baseMemory = sizeof(SkillList) + sizeof(int) * 2 + sizeof(double);
-
-    // ✅ Linked List = seekerSkillCount × (sizeof(string) + sizeof(Job))
-    memoryUsed = (seekerSkillCount * (sizeof(string) + sizeof(Job))) + sizeof(string) + baseMemory;
 
     while (temp) {
         double matchedWeight = 0.0;
         int skillCount = temp->requiredSkills.size;
-
         double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
 
         for (int i = 0; i < skillCount; ++i) {
             const string& jobSkill = temp->requiredSkills.skills[i];
             double weight = skillCount - i;
-
-            // Linear search across user skills
             if (userSkills.contains(jobSkill)) {
                 matchedWeight += weight;
             }
@@ -156,49 +136,43 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
 
         temp = temp->next;
     }
-
-    auto searchEnd = chrono::high_resolution_clock::now();
-    searchTime = chrono::duration<double, milli>(searchEnd - searchStart).count();
-    searchMemory = memoryUsed;
 }
 
 void sortByScore(Job*& head) {
     if (!head || !head->next) return;
 
-    Job* sorted = nullptr; // Start with an empty sorted list
+    Job* sorted = nullptr;
     Job* current = head;
 
     while (current) {
-        Job* nextNode = current->next; // Save next unsorted node
+        Job* nextNode = current->next;
         current->prev = current->next = nullptr;
 
-        // Insert into sorted list (descending order by matchScore)
-        if (!sorted || current->matchScore > sorted->matchScore) {
-            // Insert at the beginning
-            current->next = sorted;
-            if (sorted)
-                sorted->prev = current;
-            sorted = current;
-        } else {
-            // Find correct insertion point
-            Job* temp = sorted;
-            while (temp->next && temp->next->matchScore > current->matchScore)
-                temp = temp->next;
+        // ✅ Only consider jobs with a matchScore > 0
+        if (current->matchScore > 0.0) {
+            if (!sorted || current->matchScore > sorted->matchScore) {
+                current->next = sorted;
+                if (sorted)
+                    sorted->prev = current;
+                sorted = current;
+            } else {
+                Job* temp = sorted;
+                while (temp->next && temp->next->matchScore > current->matchScore)
+                    temp = temp->next;
 
-            // Insert after temp
-            current->next = temp->next;
-            if (temp->next)
-                temp->next->prev = current;
-            temp->next = current;
-            current->prev = temp;
+                current->next = temp->next;
+                if (temp->next)
+                    temp->next->prev = current;
+                temp->next = current;
+                current->prev = temp;
+            }
         }
 
-        current = nextNode; // Move to next unsorted node
+        current = nextNode;
     }
 
     head = sorted;
 }
-
 
 void displayJobs(Job* head, double minScore) {
     cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
@@ -212,27 +186,17 @@ void displayJobs(Job* head, double minScore) {
     int count = 0;
 
     cout << fixed << setprecision(2);
-    while (temp && count < 3) {  // Show top 3 only
+    while (temp && count < 3) {
         if (temp->matchScore >= minScore) {
-            // Example placeholders: assume matched skills and total weights calculated earlier
-            int matched = 0;
-            double totalWeight = 0.0;
-
             int skillCount = temp->requiredSkills.size;
             double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
-
-            for (int i = 0; i < skillCount; ++i) {
-                if (temp->requiredSkills.skills[i] != "") matched++;
-            }
-
-            totalWeight = skillCount; // Example: using skill count as total weight
 
             ostringstream perc;
             perc << fixed << setprecision(2) << temp->matchScore << "%";
 
             cout << left << setw(25) << temp->title
-                 << setw(10) << matched
-                 << setw(10) << totalWeight
+                 << setw(10) << skillCount
+                 << setw(10) << maxWeight
                  << setw(12) << perc.str() << endl;
 
             count++;
@@ -248,12 +212,21 @@ void displayJobs(Job* head, double minScore) {
     cout << endl;
 }
 
+int countJobs(Job* head) {
+    int count = 0;
+    while (head) {
+        count++;
+        head = head->next;
+    }
+    return count;
+}
+
 void menu(Job*& head, const SkillList& allValidSkills) {
     int choice;
     SkillList userSkills;
 
-    double matchDuration = 0.0, sortDuration = 0.0, searchDuration = 0.0;
-    size_t baseMemory = 0, matchMemoryKB = 0, sortMemoryKB = 0, searchMemoryKB = 0;
+    double searchDuration = 0.0, sortDuration = 0.0;
+    size_t searchMemoryKB = 0, sortMemoryKB = 0;
     bool performanceRecorded = false;
 
     do {
@@ -271,22 +244,20 @@ void menu(Job*& head, const SkillList& allValidSkills) {
             case 1: {
                 userSkills = insertSkills(allValidSkills);
 
-                auto matchStart = chrono::high_resolution_clock::now();
-                updateAllMatchScores(head, userSkills, searchDuration, searchMemoryKB);
-                auto matchEnd = chrono::high_resolution_clock::now();
-                matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
+                // ✅ Measure Linear Search Time & Memory
+                auto searchStart = chrono::high_resolution_clock::now();
+                updateAllMatchScores(head, userSkills);
+                auto searchEnd = chrono::high_resolution_clock::now();
+                searchDuration = chrono::duration<double, milli>(searchEnd - searchStart).count();
+                searchMemoryKB = sizeof(SkillList) + sizeof(string) * userSkills.size;
 
+                // ✅ Measure Insertion Sort Time & Memory
                 auto sortStart = chrono::high_resolution_clock::now();
                 sortByScore(head);
                 auto sortEnd = chrono::high_resolution_clock::now();
-
-                matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
                 sortDuration = chrono::duration<double, milli>(sortEnd - sortStart).count();
-
-                // ✅ Manual memory estimation
-                baseMemory = sizeof(SkillList) * 2 + sizeof(Job) * 100 + sizeof(string) * 200;
-                matchMemoryKB = sizeof(SkillList) + sizeof(string) * userSkills.size;
-                sortMemoryKB = sizeof(Job) * 100 + sizeof(int) * 2;
+                int jobCount = countJobs(head);
+                sortMemoryKB = sizeof(Job) * jobCount;
 
                 performanceRecorded = true;
                 displayJobs(head, 0);

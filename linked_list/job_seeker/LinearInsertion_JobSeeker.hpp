@@ -39,6 +39,7 @@ SkillList insertSkills(const SkillList& allValidSkills);
 void updateAllMatchScores(Job* head, const SkillList& userSkills);
 void sortByScore(Job*& head);
 void displayJobs(Job* head, double minScore);
+int countJobs(Job* head);
 void menu(Job*& head, const SkillList& allValidSkills, size_t baselineMemory);
 
 #endif
