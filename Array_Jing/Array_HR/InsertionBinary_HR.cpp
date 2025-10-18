@@ -6,7 +6,10 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits>
+#include <vector>
+
 using namespace std;
+using namespace std::chrono;
 
 // ---------- Utility ----------
 string HRSystem::trim(const string &s) {
@@ -98,18 +101,22 @@ void HRSystem::displayJobs() {
         cout << " " << i + 1 << ". " << jobs[i].name << endl;
 }
 
-void HRSystem::displayTop5() {
+void HRSystem::displayTop5(const vector<Candidate> &sortedList) {
     cout << "\n===== Top 5 Matching Candidates =====\n";
     cout << left << setw(20) << "Candidate"
          << setw(20) << "Matched Skills"
          << setw(20) << "Matched Weight"
          << setw(15) << "Score (%)" << endl;
     cout << "---------------------------------------------------------------\n";
-    for (int i = 0; i < min(candCount, 5); i++) {
-        cout << left << setw(20) << candidates[i].name
-             << setw(20) << candidates[i].matchedSkills
-             << setw(20) << candidates[i].matchedWeight
-             << fixed << setprecision(1) << candidates[i].percentage << "%" << endl;
+    int limit = min((int)sortedList.size(), 5);
+    for (int i = 0; i < limit; ++i) {
+        cout << left << setw(20) << sortedList[i].name
+             << setw(20) << sortedList[i].matchedSkills
+             << setw(20) << sortedList[i].matchedWeight
+             << fixed << setprecision(1) << sortedList[i].percentage << "%" << endl;
+    }
+    if (limit == 0) {
+        cout << "⚠️ No matching candidates found.\n";
     }
 }
 
@@ -137,39 +144,47 @@ int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t
     auto end = high_resolution_clock::now();
     binaryTime = duration<double, milli>(end - start).count();
 
-    // Approx memory used by search variables
+    // approximate memory used by the search variables
     binaryMemory = sizeof(int) * 3 + sizeof(string) * 2;
     return result;
 }
 
-// ---------- Insertion Sort ----------
-void HRSystem::insertionSortTimed(double &insertionTime, size_t &sortMemory) {
+// ---------- Insertion Sort (on vector of matched candidates) ----------
+void HRSystem::insertionSortTimed(vector<Candidate> &matchList, double &insertionTime, size_t &sortMemory) {
     auto start = high_resolution_clock::now();
 
-    // ✅ Correct insertion sort (stable + efficient)
-    for (int i = 1; i < candCount; i++) {
-        Candidate key = candidates[i];
+    int n = (int)matchList.size();
+    for (int i = 1; i < n; i++) {
+        Candidate key = matchList[i];
         int j = i - 1;
-
-        // Move elements greater than key one position ahead
-        while (j >= 0 && candidates[j].percentage < key.percentage) {
-            candidates[j + 1] = candidates[j];
+        while (j >= 0 && matchList[j].percentage < key.percentage) { // descending by percentage
+            matchList[j + 1] = matchList[j];
             j--;
         }
-        candidates[j + 1] = key;
+        matchList[j + 1] = key;
     }
 
     auto end = high_resolution_clock::now();
     insertionTime = duration<double, milli>(end - start).count();
 
-    // ✅ Correct & realistic memory calculation
-    sortMemory = sizeof(Candidate) * candCount + sizeof(Candidate) + sizeof(int) * 2;
+    // memory used for sorting the temporary matched list
+    sortMemory = sizeof(Candidate) * n + sizeof(Candidate) + sizeof(int) * 2;
+}
+
+// ---------- Memory helpers ----------
+size_t HRSystem::calculateBaseMemory() const {
+    return sizeof(*this) + sizeof(JobHR) * jobCount + sizeof(Candidate) * candCount;
+}
+
+size_t HRSystem::calculateMatchingMemory(int selectedCount) const {
+    // approximate memory cost for matching procedure (variables + strings)
+    return sizeof(int) * 3 + sizeof(string) * (2 + selectedCount) + calculateBaseMemory();
 }
 
 // ---------- Search & Match ----------
 void HRSystem::searchAndMatch() {
     auto systemStart = high_resolution_clock::now();
-    size_t baseMemory = sizeof(*this) + sizeof(JobHR) * jobCount + sizeof(Candidate) * candCount;
+    size_t baseMemory = calculateBaseMemory();
 
     while (true) {
         displayJobs();
@@ -192,7 +207,6 @@ void HRSystem::searchAndMatch() {
         cout << "Required Skills:\n";
         for (int i = 0; i < jobs[jobIndex].skillCount; i++) {
             string skill = trim(jobs[jobIndex].skills[i]);
-            // ✅ Remove first and last quote cleanly
             if (!skill.empty() && skill.front() == '"') skill.erase(skill.begin());
             if (!skill.empty() && skill.back() == '"') skill.pop_back();
             jobs[jobIndex].skills[i] = trim(skill);
@@ -210,7 +224,7 @@ void HRSystem::searchAndMatch() {
             } else break;
         }
 
-        binaryMemory = sizeof(int) * 3 + sizeof(string) * (2 + selectedCount) + baseMemory;
+        binaryMemory = calculateMatchingMemory(selectedCount);
 
         int selectedIdx[MAX_SKILLS], weights[MAX_SKILLS];
         fill(begin(selectedIdx), end(selectedIdx), -1);
@@ -256,26 +270,42 @@ void HRSystem::searchAndMatch() {
         }
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
+        // Build temporary vector of candidates (only first candCount elements)
+        vector<Candidate> matchList;
+        matchList.reserve(candCount);
+        for (int i = 0; i < candCount; ++i) matchList.push_back(candidates[i]);
+
+        // Matching process: compute matchedSkills, matchedWeight, percentage
         auto matchStart = high_resolution_clock::now();
-        for (int i = 0; i < candCount; i++) {
-            candidates[i].matchedSkills = 0;
-            candidates[i].matchedWeight = 0;
+        for (auto &cand : matchList) {
+            cand.matchedSkills = 0;
+            cand.matchedWeight = 0;
             for (int j = 0; j < selectedCount; j++) {
                 string skill = jobs[jobIndex].skills[selectedIdx[j]];
-                for (int k = 0; k < candidates[i].skillCount; k++) {
-                    if (skill == candidates[i].skills[k]) {
-                        candidates[i].matchedSkills++;
-                        candidates[i].matchedWeight += weights[j];
+                for (int k = 0; k < cand.skillCount; k++) {
+                    if (skill == cand.skills[k]) {
+                        cand.matchedSkills++;
+                        cand.matchedWeight += weights[j];
                     }
                 }
             }
-            candidates[i].percentage = (double)candidates[i].matchedSkills / selectedCount * 100.0;
+            cand.percentage = (selectedCount == 0) ? 0.0 : (double)cand.matchedSkills / selectedCount * 100.0;
         }
         auto matchEnd = high_resolution_clock::now();
         matchingTime = duration<double, milli>(matchEnd - matchStart).count();
 
-        insertionSortTimed(insertionTime, sortMemory);
-        displayTop5();
+        // Remove candidates with no matches (so sorting only considers matched ones)
+        vector<Candidate> onlyMatched;
+        onlyMatched.reserve(matchList.size());
+        for (const auto &c : matchList) {
+            if (c.matchedSkills > 0) onlyMatched.push_back(c);
+        }
+
+        // Sort only the matched candidates and measure sort time/memory
+        insertionSortTimed(onlyMatched, insertionTime, sortMemory);
+
+        // Display top 5 from onlyMatched
+        displayTop5(onlyMatched);
 
         int choice;
         while (true) {
@@ -290,6 +320,7 @@ void HRSystem::searchAndMatch() {
                 cout << "\n----- Performance Summary -----\n";
                 cout << "Binary Search Time        : " << fixed << setprecision(3) << binaryTime << " ms\n";
                 cout << "Binary Search Memory      : " << fixed << setprecision(3) << (binaryMemory / 1024.0) << " KB\n";
+                cout << "Matching Process Time     : " << fixed << setprecision(3) << matchingTime << " ms\n";
                 cout << "Insertion Sort Time       : " << fixed << setprecision(3) << insertionTime << " ms\n";
                 cout << "Insertion Sort Memory     : " << fixed << setprecision(3) << (sortMemory / 1024.0) << " KB\n";
                 cout << "Approx. Base Memory (arr) : " << fixed << setprecision(3) << (baseMemory / 1024.0) << " KB\n";

@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <limits>
 #include <chrono>
+#include <vector>
+
 using namespace std;
 using namespace std::chrono;
 
@@ -47,36 +49,40 @@ private:
     int candCount;
 
 public:
+    // Constructor
     HRSystem();
 
     // Utility
     string trim(const string &s);
     string toLower(string str);
 
-    // File loading
+    // File handling
     void loadJobs(const string &filename);
     void loadCandidates(const string &filename);
 
     // Display
     void displayJobs();
-    void displayTop5();
+    void displayTop5(const vector<Candidate> &sortedList);
 
     // Core algorithms
     int binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory);
-    void insertionSortTimed(double &insertionTime, size_t &insertionMemory);
 
+    // Sort only the matched list (vector) and measure time/memory for that sort
+    void insertionSortTimed(vector<Candidate> &matchList, double &insertionTime, size_t &sortMemory);
+
+    // Matching flow
     void searchAndMatch();
 
-    // Performance getters
-    int getJobCount() const { return jobCount; }
-    int getCandidateCount() const { return candCount; }
-
-    // Memory calculation helpers
+    // Helpers (optional)
     size_t calculateBaseMemory() const;
     size_t calculateMatchingMemory(int selectedCount) const;
+
+    // Getters
+    int getJobCount() const { return jobCount; }
+    int getCandidateCount() const { return candCount; }
 };
 
-// Run system
+// Runner
 void runHRSystem();
 
 #endif // INSERTIONBINARY_HR_HPP

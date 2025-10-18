@@ -28,32 +28,32 @@ private:
     string seekerSkills[20];
     int seekerSkillCount;
 
-    // ---------- Utility Functions ----------
+    // Utility
     string trim(const string &s);
     string toLower(string str);
 
 public:
-    // ---------- Constructor ----------
+    // Constructor
     JobMatcher();
 
-    // ---------- Core Functionalities ----------
+    // Core functions
     void loadJobs(const string &filename);
     void inputSeekerSkills();
     void matchSkillsWeighted();
-    void sortJobsByWeightedScore();
-    void displayTopMatches();
+    void insertionSortSkills();
 
-    // ---------- Binary Search ----------
+    // Searching
     int binarySearchJob(const string &title);
     bool binarySearchSkill(string arr[], int n, string target);
 
-    // ---------- Insertion Sort for Seeker Skills ----------
-    void insertionSortSkills();
-
-    // ---------- Getter Methods ----------
+    // Getters
     int getJobCount() const { return jobCount; }
     int getSeekerSkillCount() const { return seekerSkillCount; }
+    JobJS getJobAt(int index) const; // return a copy of job at index
+
+    // Static helpers operating on arrays of JobJS (used for matched jobs)
+    static void sortJobsByWeightedScoreArray(JobJS arr[], int count);
+    static void displayTopMatchesArray(JobJS arr[], int count);
 };
 
 #endif // INSERTIONBINARY_JOBSEEKER_HPP
-

@@ -22,7 +22,7 @@ string JobMatcher::toLower(string str) {
     return str;
 }
 
-// ---------- ✅ Binary Search (for Job Title) ----------
+// ---------- Binary Search (for Job Title) ----------
 int JobMatcher::binarySearchJob(const string &title) {
     int left = 0, right = jobCount - 1;
     string searchTitle = toLower(title);
@@ -39,7 +39,7 @@ int JobMatcher::binarySearchJob(const string &title) {
     return -1;
 }
 
-// ---------- ✅ Binary Search Helper (for Skills) ----------
+// ---------- Binary Search Helper (for Skills) ----------
 bool JobMatcher::binarySearchSkill(string arr[], int n, string target) {
     int left = 0, right = n - 1;
     target = toLower(target);
@@ -58,7 +58,7 @@ bool JobMatcher::binarySearchSkill(string arr[], int n, string target) {
     return false;
 }
 
-// ---------- ✅ Insertion Sort (for Seeker Skills) ----------
+// ---------- Insertion Sort (for Seeker Skills) ----------
 void JobMatcher::insertionSortSkills() {
     for (int i = 1; i < seekerSkillCount; i++) {
         string key = seekerSkills[i];
@@ -104,6 +104,18 @@ void JobMatcher::loadJobs(const string &filename) {
             jobCount++;
     }
     file.close();
+
+    // Optional: sort jobs by title alphabetically to guarantee binarySearchJob correctness
+    // Simple insertion sort by title (case-insensitive)
+    for (int i = 1; i < jobCount; ++i) {
+        JobJS key = jobJSs[i];
+        int j = i - 1;
+        while (j >= 0 && toLower(jobJSs[j].title) > toLower(key.title)) {
+            jobJSs[j + 1] = jobJSs[j];
+            j--;
+        }
+        jobJSs[j + 1] = key;
+    }
 }
 
 // ---------- Input Seeker Skills ----------
@@ -129,9 +141,8 @@ void JobMatcher::inputSeekerSkills() {
     }
 }
 
-// ---------- ✅ Weighted Skill Matching (Binary + Insertion Sort Version) ----------
+// ---------- Weighted Skill Matching ----------
 void JobMatcher::matchSkillsWeighted() {
-    // 🔹 Sort seeker’s skills alphabetically using insertion sort
     insertionSortSkills();
 
     for (int i = 0; i < jobCount; i++) {
@@ -147,40 +158,48 @@ void JobMatcher::matchSkillsWeighted() {
         }
 
         int maxWeight = jobJSs[i].skillCount * (jobJSs[i].skillCount + 1) / 2;
-        jobJSs[i].percentage = (double)jobJSs[i].weightedScore / maxWeight * 100.0;
+        jobJSs[i].percentage = (maxWeight == 0) ? 0.0 : (double)jobJSs[i].weightedScore / maxWeight * 100.0;
     }
 }
 
-// ---------- ✅ Insertion Sort (for Job Sorting by Weighted Score) ----------
-void JobMatcher::sortJobsByWeightedScore() {
-    for (int i = 1; i < jobCount; i++) {
-        JobJS key = jobJSs[i];
+// ---------- Getter for a job (copy) ----------
+JobJS JobMatcher::getJobAt(int index) const {
+    if (index < 0 || index >= jobCount) {
+        return JobJS(); // return default empty job on invalid index
+    }
+    return jobJSs[index];
+}
+
+// ---------- Static: Insertion Sort (for Job Sorting by Weighted Score) ----------
+void JobMatcher::sortJobsByWeightedScoreArray(JobJS arr[], int count) {
+    for (int i = 1; i < count; i++) {
+        JobJS key = arr[i];
         int j = i - 1;
-        while (j >= 0 && jobJSs[j].weightedScore < key.weightedScore) {
-            jobJSs[j + 1] = jobJSs[j];
+        while (j >= 0 && arr[j].weightedScore < key.weightedScore) {
+            arr[j + 1] = arr[j];
             j--;
         }
-        jobJSs[j + 1] = key;
+        arr[j + 1] = key;
     }
 }
 
-// ---------- Display Top 3 Matches ----------
-void JobMatcher::displayTopMatches() {
+// ---------- Static: Display Top Matches from an array ----------
+void JobMatcher::displayTopMatchesArray(JobJS arr[], int count) {
     cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
-    cout << left << setw(20) << "Job Title"
-         << setw(15) << "Matched"
-         << setw(15) << "Weight"
-         << setw(15) << "Percentage" << endl;
-    cout << string(65, '-') << endl;
+    cout << left << setw(30) << "Job Title"
+         << setw(12) << "Matched"
+         << setw(12) << "Weight"
+         << setw(12) << "Percentage" << endl;
+    cout << string(70, '-') << endl;
 
-    int limit = (jobCount < 3) ? jobCount : 3;
+    int limit = (count < 3) ? count : 3;
     int validCount = 0;
     for (int i = 0; i < limit; i++) {
-        if (jobJSs[i].weightedScore > 0) {
-            cout << left << setw(20) << jobJSs[i].title
-                 << setw(15) << jobJSs[i].matched
-                 << setw(15) << jobJSs[i].weightedScore
-                 << fixed << setprecision(2) << jobJSs[i].percentage << "%" << endl;
+        if (arr[i].weightedScore > 0) {
+            cout << left << setw(30) << arr[i].title
+                 << setw(12) << arr[i].matched
+                 << setw(12) << arr[i].weightedScore
+                 << fixed << setprecision(2) << arr[i].percentage << "%" << endl;
             validCount++;
         }
     }
@@ -209,15 +228,26 @@ void runJobSeekerSystem() {
         jm.matchSkillsWeighted();
         auto endMatch = chrono::high_resolution_clock::now();
 
+        // Filter only jobs that have matches using the public getter
+        JobJS matchedJobs[50];
+        int matchedJobCount = 0;
+        for (int i = 0; i < jm.getJobCount(); i++) {
+            JobJS j = jm.getJobAt(i);
+            if (j.weightedScore > 0) {
+                matchedJobs[matchedJobCount++] = j;
+            }
+        }
+
         auto startSort = chrono::high_resolution_clock::now();
-        jm.sortJobsByWeightedScore();
+        JobMatcher::sortJobsByWeightedScoreArray(matchedJobs, matchedJobCount);
         auto endSort = chrono::high_resolution_clock::now();
 
         auto startBinary = chrono::high_resolution_clock::now();
+        // Example binary search by title (jobs were optionally sorted by title during load)
         jm.binarySearchJob("Software Engineer");
         auto endBinary = chrono::high_resolution_clock::now();
 
-        jm.displayTopMatches();
+        JobMatcher::displayTopMatchesArray(matchedJobs, matchedJobCount);
 
         double matchTime = chrono::duration<double, milli>(endMatch - startMatch).count();
         double sortTime = chrono::duration<double, milli>(endSort - startSort).count();
@@ -243,7 +273,7 @@ void runJobSeekerSystem() {
             if (choice == 1) {
                 backToSkill = true;
                 break;
-            } 
+            }
             else if (choice == 2) {
                 size_t baseMemory = sizeof(jm) +
                                     jm.getJobCount() * sizeof(JobJS) +
@@ -255,8 +285,9 @@ void runJobSeekerSystem() {
                 size_t binaryTitleMemory =
                     sizeof(int) * 3 + sizeof(string) * 2 + baseMemory;
 
+                // Only count matched jobs for insertion sort memory calc
                 size_t sortMemory =
-                    sizeof(JobJS) * jm.getJobCount() + sizeof(JobJS) + sizeof(int) * 2;
+                    sizeof(JobJS) * matchedJobCount + sizeof(JobJS) + sizeof(int) * 2;
 
                 cout << "\n=============================\n";
                 cout << "Performance Summary\n";
@@ -272,7 +303,7 @@ void runJobSeekerSystem() {
                      << (sortMemory / 1024.0) << " KB\n";
                 cout << "Approx. Base Memory (arr)    : " << fixed << setprecision(3)
                      << (baseMemory / 1024.0) << " KB\n";
-            } 
+            }
             else if (choice == 3) {
                 running = false;
                 backToSkill = false;
@@ -291,7 +322,6 @@ void runJobSeekerSystem() {
     double totalSystemTime = chrono::duration<double, milli>(systemEnd - systemStart).count();
     cout << "Total session runtime: " << fixed << setprecision(3) << totalSystemTime << " ms\n";
 }
-
 
 int main() {
     runJobSeekerSystem();
