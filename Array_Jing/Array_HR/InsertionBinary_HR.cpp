@@ -116,7 +116,7 @@ void HRSystem::displayTop5(const vector<Candidate> &sortedList) {
              << fixed << setprecision(1) << sortedList[i].percentage << "%" << endl;
     }
     if (limit == 0) {
-        cout << "⚠️ No matching candidates found.\n";
+        cout << "!! No matching candidates found.\n";
     }
 }
 
@@ -199,7 +199,7 @@ void HRSystem::searchAndMatch() {
 
         int jobIndex = binarySearchTimed(jobInput, binaryTime, binaryMemory);
         if (jobIndex == -1) {
-            cout << "❌ Job not found.\n";
+            cout << "X Job not found.\n";
             continue;
         }
 
@@ -218,7 +218,7 @@ void HRSystem::searchAndMatch() {
         while (true) {
             cin >> selectedCount;
             if (cin.fail() || selectedCount < 1 || selectedCount > jobs[jobIndex].skillCount) {
-                cout << "❌ Invalid number. Enter 1-" << jobs[jobIndex].skillCount << ": ";
+                cout << "X Invalid number. Enter 1-" << jobs[jobIndex].skillCount << ": ";
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
             } else break;
@@ -244,7 +244,7 @@ void HRSystem::searchAndMatch() {
                 } else {
                     for (int j = 0; j < i; j++) {
                         if (selectedIdx[j] == skillNum - 1) {
-                            cout << "⚠️ Duplicate skill selected. Choose different.\n";
+                            cout << "!! Duplicate skill selected. Choose different.\n";
                             duplicate = true;
                             break;
                         }
@@ -261,7 +261,7 @@ void HRSystem::searchAndMatch() {
                 cout << "Weight for \"" << jobs[jobIndex].skills[selectedIdx[i]] << "\": ";
                 cin >> weight;
                 if (cin.fail() || weight < 1 || weight > 10) {
-                    cout << "❌ Invalid weight. Enter 1-10.\n";
+                    cout << "X Invalid weight. Enter 1-10.\n";
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 } else break;
@@ -331,7 +331,7 @@ void HRSystem::searchAndMatch() {
                 double totalSystemTime = duration<double, milli>(systemEnd - systemStart).count();
                 cout << "Total Session Runtime: " << totalSystemTime << " ms\n";
                 return;
-            } else cout << "❌ Invalid choice. Enter 1-3.\n";
+            } else cout << "X Invalid choice. Enter 1-3.\n";
         }
     }
 }

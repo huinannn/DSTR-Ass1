@@ -1,13 +1,14 @@
 #include <iostream>
 #include <string>
-#include <cstdlib> // for system()
+#include <cstdlib>   // for system()
 #include <limits>
 #include <algorithm>
 
 using namespace std;
 
 // Function to get compile/run commands based on role, structure, algorithm
-void getCompileRunCommands(const string &role, const string &structure, const string &algorithm, string &compileCmd, string &runCmd) {
+void getCompileRunCommands(const string &role, const string &structure, const string &algorithm,
+                           string &compileCmd, string &runCmd) {
 #ifdef _WIN32
     string exeExt = ".exe";
 #else
@@ -16,30 +17,42 @@ void getCompileRunCommands(const string &role, const string &structure, const st
 
     if (role == "hr") {
         if (structure == "array") {
-            if (algorithm.find("1") != string::npos || (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos))
+            if (algorithm == "1") {
+                cout << "\nRunning Array Insertion Sort and Binary Search (HR)\n";
                 compileCmd = "g++ ./Array_Jing/Array_HR/InsertionBinary_HR.cpp -o HR" + exeExt;
-            else
+            } else {
+                cout << "\nRunning Array Merge Sort and Jump Search (HR)\n";
                 compileCmd = "g++ ./Array_Xin/HR/MergeJump_HR.cpp -o HR" + exeExt;
+            }
             runCmd = "HR" + exeExt;
         } else { // linked list
-            if (algorithm.find("1") != string::npos || (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos))
+            if (algorithm == "1") {
+                cout << "\nRunning Linked List Insertion Sort and Linear Search (HR)\n";
                 compileCmd = "g++ ./linked_list/hr/LinearInsertion_HR.cpp -o HR" + exeExt;
-            else
+            } else {
+                cout << "\nRunning Linked List Merge Sort and Optimized Linear Search (HR)\n";
                 compileCmd = "g++ ./linked_list/hr/OptimizedMerge_HR.cpp -o HR" + exeExt;
+            }
             runCmd = "HR" + exeExt;
         }
     } else { // job seeker
         if (structure == "array") {
-            if (algorithm.find("1") != string::npos || (algorithm.find("binary") != string::npos && algorithm.find("insertion") != string::npos))
+            if (algorithm == "1") {
+                cout << "\nRunning Array Insertion Sort and Binary Search (Job Seeker)\n";
                 compileCmd = "g++ ./Array_Jing/Array_jobseeker/InsertionBinary_JobSeeker.cpp -o JobSeeker" + exeExt;
-            else
+            } else {
+                cout << "\nRunning Array Merge Sort and Jump Search (Job Seeker)\n";
                 compileCmd = "g++ ./Array_Xin/Job_Seeker/MergeJump_JobSeeker.cpp -o JobSeeker" + exeExt;
+            }
             runCmd = "JobSeeker" + exeExt;
         } else { // linked list
-            if (algorithm.find("1") != string::npos || (algorithm.find("linear") != string::npos && algorithm.find("insertion") != string::npos))
+            if (algorithm == "1") {
+                cout << "\nRunning Linked List Insertion Sort and Linear Search (Job Seeker)\n";
                 compileCmd = "g++ ./linked_list/job_seeker/LinearInsertion_JobSeeker.cpp -o JobSeeker" + exeExt;
-            else
+            } else {
+                cout << "\nRunning Linked List Merge Sort and Optimized Linear Search (Job Seeker)\n";
                 compileCmd = "g++ ./linked_list/job_seeker/OptimizedMerge_JobSeeker.cpp -o JobSeeker" + exeExt;
+            }
             runCmd = "JobSeeker" + exeExt;
         }
     }
@@ -72,7 +85,7 @@ int main() {
                 role = "job seeker";
                 break;
             } else {
-                cout << "❌ Invalid role. Try again.\n\n";
+                cout << "Invalid role. Try again.\n\n";
             }
         }
 
@@ -91,7 +104,7 @@ int main() {
                 structure = "linked list";
                 break;
             } else {
-                cout << "❌ Invalid data structure. Try again.\n\n";
+                cout << "Invalid data structure. Try again.\n\n";
             }
         }
 
@@ -110,7 +123,7 @@ int main() {
             getline(cin, algorithm);
 
             if (algorithm == "1" || algorithm == "2") break;
-            cout << "❌ Invalid input. Try again.\n";
+            cout << "Invalid input. Try again.\n";
         }
 
         cout << "\n-----------------------------------------\n";
@@ -118,17 +131,17 @@ int main() {
         string compileCmd, runCmd;
         getCompileRunCommands(role, structure, algorithm, compileCmd, runCmd);
 
-        cout << "Compiling selected module...\n";
+        cout << "\nCompiling selected module...\n";
         int compileResult = system(compileCmd.c_str());
         if (compileResult != 0) {
-            cout << "❌ Compilation failed. Check file paths and syntax.\n";
+            cout << "Compilation failed. Check file paths and syntax.\n";
             continue;
         }
 
-        cout << "Executing module...\n";
+        cout << "\nExecuting module...\n";
         int runResult = system(runCmd.c_str());
         if (runResult != 0) {
-            cout << "⚠️ Error running the selected module.\n";
+            cout << "Error running the selected module.\n";
         }
 
         // After execution: loop menu
@@ -140,7 +153,7 @@ int main() {
             cout << "Enter 1 or 2: ";
             cin >> menuChoice;
             if (cin.fail() || (menuChoice != 1 && menuChoice != 2)) {
-                cout << "❌ Invalid choice. Try again.\n";
+                cout << "Invalid choice. Try again.\n";
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
             } else break;
@@ -148,7 +161,7 @@ int main() {
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         if (menuChoice == 2) {
-            cout << "Exiting program. Goodbye!\n";
+            cout << "\nExiting program. Goodbye!\n";
             break;
         }
 
