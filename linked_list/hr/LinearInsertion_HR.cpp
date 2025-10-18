@@ -368,12 +368,8 @@ MatchResult Matcher::matchCandidates(JobRole* role, Candidate* candidates, Skill
     double insertionTime = chrono::duration<double, std::milli>(endSort - startSort).count();
 
     int selectedCount = Utils::countSkills(searchSkills);
-    int jobCount = 0;
-    for (Candidate* c = candidates; c; c = c->next) {
-        jobCount++;
-    }
     size_t linearMemory = sizeof(SkillNode*) * 2 + sizeof(string) * (selectedCount + 1);
-    size_t insertionMemory = sizeof(Candidate*) * 3 + sizeof(Candidate) * jobCount;
+    size_t insertionMemory = sizeof(Candidate*) * 3 + sizeof(Candidate) * candidateCount;
 
     delete[] weights;
     return { sorted, linearTime, insertionTime, linearMemory, insertionMemory };
