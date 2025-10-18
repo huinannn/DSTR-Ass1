@@ -163,16 +163,16 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
 }
 
 void sortByScore(Job*& head) {
-    if (!head) return;
+    if (!head || !head->next) return;
 
-    Job* sorted = nullptr; // New sorted list
+    Job* sorted = nullptr; // Start with an empty sorted list
     Job* current = head;
 
-    while (current != nullptr) {
-        Job* next = current->next;  // Save next node
+    while (current) {
+        Job* nextNode = current->next; // Save next unsorted node
         current->prev = current->next = nullptr;
 
-        // Insert current into the sorted list
+        // Insert into sorted list (descending order by matchScore)
         if (!sorted || current->matchScore > sorted->matchScore) {
             // Insert at the beginning
             current->next = sorted;
@@ -180,7 +180,7 @@ void sortByScore(Job*& head) {
                 sorted->prev = current;
             sorted = current;
         } else {
-            // Traverse the sorted list to find insertion point
+            // Find correct insertion point
             Job* temp = sorted;
             while (temp->next && temp->next->matchScore > current->matchScore)
                 temp = temp->next;
@@ -193,11 +193,12 @@ void sortByScore(Job*& head) {
             current->prev = temp;
         }
 
-        current = next; // Move to next unsorted node
+        current = nextNode; // Move to next unsorted node
     }
 
     head = sorted;
 }
+
 
 void displayJobs(Job* head, double minScore) {
     cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
@@ -325,7 +326,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
