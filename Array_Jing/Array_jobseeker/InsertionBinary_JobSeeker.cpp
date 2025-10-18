@@ -1,5 +1,6 @@
 #include "InsertionBinary_JobSeeker.hpp"
 #include <chrono>
+#include <algorithm>
 using namespace std::chrono;
 
 // ---------- Constructor ----------
@@ -10,8 +11,8 @@ JobMatcher::JobMatcher() {
 
 // ---------- Trim Whitespace ----------
 string JobMatcher::trim(const string &s) {
-    size_t start = s.find_first_not_of(" \t\r\n");
-    size_t end = s.find_last_not_of(" \t\r\n");
+    size_t start = s.find_first_not_of(" \t\r\n\"");
+    size_t end = s.find_last_not_of(" \t\r\n\"");
     return (start == string::npos) ? "" : s.substr(start, end - start + 1);
 }
 
@@ -36,6 +37,38 @@ int JobMatcher::binarySearchJob(const string &title) {
             right = mid - 1;
     }
     return -1;
+}
+
+// ---------- ✅ Binary Search Helper (for Skills) ----------
+bool JobMatcher::binarySearchSkill(string arr[], int n, string target) {
+    int left = 0, right = n - 1;
+    target = toLower(target);
+
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        string midVal = toLower(arr[mid]);
+
+        if (midVal == target)
+            return true;
+        else if (midVal < target)
+            left = mid + 1;
+        else
+            right = mid - 1;
+    }
+    return false;
+}
+
+// ---------- ✅ Insertion Sort (for Seeker Skills) ----------
+void JobMatcher::insertionSortSkills() {
+    for (int i = 1; i < seekerSkillCount; i++) {
+        string key = seekerSkills[i];
+        int j = i - 1;
+        while (j >= 0 && toLower(seekerSkills[j]) > toLower(key)) {
+            seekerSkills[j + 1] = seekerSkills[j];
+            j--;
+        }
+        seekerSkills[j + 1] = key;
+    }
 }
 
 // ---------- Load Jobs from CSV ----------
@@ -96,20 +129,20 @@ void JobMatcher::inputSeekerSkills() {
     }
 }
 
-// ---------- Weighted Skill Matching ----------
+// ---------- ✅ Weighted Skill Matching (Binary + Insertion Sort Version) ----------
 void JobMatcher::matchSkillsWeighted() {
+    // 🔹 Sort seeker’s skills alphabetically using insertion sort
+    insertionSortSkills();
+
     for (int i = 0; i < jobCount; i++) {
         jobJSs[i].matched = 0;
         jobJSs[i].weightedScore = 0;
 
         for (int j = 0; j < jobJSs[i].skillCount; j++) {
             int weight = jobJSs[i].skillCount - j;
-            for (int s = 0; s < seekerSkillCount; s++) {
-                if (toLower(seekerSkills[s]) == toLower(jobJSs[i].skills[j])) {
-                    jobJSs[i].matched++;
-                    jobJSs[i].weightedScore += weight;
-                    break;
-                }
+            if (binarySearchSkill(seekerSkills, seekerSkillCount, jobJSs[i].skills[j])) {
+                jobJSs[i].matched++;
+                jobJSs[i].weightedScore += weight;
             }
         }
 
@@ -118,7 +151,7 @@ void JobMatcher::matchSkillsWeighted() {
     }
 }
 
-// ---------- ✅ Insertion Sort (Descending by Weighted Score) ----------
+// ---------- ✅ Insertion Sort (for Job Sorting by Weighted Score) ----------
 void JobMatcher::sortJobsByWeightedScore() {
     for (int i = 1; i < jobCount; i++) {
         JobJS key = jobJSs[i];
@@ -157,7 +190,7 @@ void JobMatcher::displayTopMatches() {
     }
 }
 
-// ---------- Main Program ----------
+// ---------- Main Runner ----------
 void runJobSeekerSystem() {
     cout << "==============================================" << endl;
     cout << "        JOB SEEKER MATCHING SYSTEM" << endl;
@@ -172,19 +205,16 @@ void runJobSeekerSystem() {
     while (running) {
         jm.inputSeekerSkills();
 
-        // ✅ Step 1: Skill Matching Time
         auto startMatch = chrono::high_resolution_clock::now();
         jm.matchSkillsWeighted();
         auto endMatch = chrono::high_resolution_clock::now();
 
-        // ✅ Step 2: Insertion Sort Time
         auto startSort = chrono::high_resolution_clock::now();
         jm.sortJobsByWeightedScore();
         auto endSort = chrono::high_resolution_clock::now();
 
-        // ✅ Step 3: Binary Search Time (example)
         auto startBinary = chrono::high_resolution_clock::now();
-        jm.binarySearchJob("Software Engineer"); // can be user-input job name
+        jm.binarySearchJob("Software Engineer");
         auto endBinary = chrono::high_resolution_clock::now();
 
         jm.displayTopMatches();
@@ -193,7 +223,6 @@ void runJobSeekerSystem() {
         double sortTime = chrono::duration<double, milli>(endSort - startSort).count();
         double binaryTime = chrono::duration<double, micro>(endBinary - startBinary).count();
 
-        // 🔁 Inner menu loop
         bool backToSkill = false;
         while (true) {
             int choice;
@@ -216,24 +245,33 @@ void runJobSeekerSystem() {
                 break;
             } 
             else if (choice == 2) {
-                // ✅ Memory usage estimation
-                size_t baseMemory =
-                    sizeof(jm) +
-                    jm.getJobCount() * sizeof(JobJS) +
-                    jm.getSeekerSkillCount() * sizeof(string);
+                size_t baseMemory = sizeof(jm) +
+                                    jm.getJobCount() * sizeof(JobJS) +
+                                    jm.getSeekerSkillCount() * sizeof(string);
 
-                size_t binaryMemory = sizeof(string) * 2 + sizeof(int) * 3;
-                size_t sortMemory = jm.getJobCount() * sizeof(JobJS) + sizeof(int) * 2;
+                size_t binaryMatchMemory =
+                    sizeof(int) * 3 + sizeof(string) * jm.getSeekerSkillCount() + baseMemory;
+
+                size_t binaryTitleMemory =
+                    sizeof(int) * 3 + sizeof(string) * 2 + baseMemory;
+
+                size_t sortMemory =
+                    sizeof(JobJS) * jm.getJobCount() + sizeof(JobJS) + sizeof(int) * 2;
 
                 cout << "\n=============================\n";
                 cout << "Performance Summary\n";
                 cout << "=============================\n";
-                /*cout << "Skill Matching Time: " << fixed << setprecision(3) << matchTime << " ms\n";*/
-                cout << "Binary Search Time: " << fixed << setprecision(3) << binaryTime << " ms\n";
-                cout << "Insertion Sort Time: " << fixed << setprecision(3) << sortTime << " ms\n";
-                cout << "Binary Search Memory: " << (binaryMemory / 1024.0) << " KB\n";
-                cout << "Insertion Sort Memory: " << (sortMemory / 1024.0) << " KB\n";
-                /*cout << "Approx. Base Memory Used: " << (baseMemory / 1024.0) << " KB\n";*/
+                cout << "Skill Matching (Binary) Time : " << fixed << setprecision(3) << matchTime << " ms\n";
+                cout << "Skill Matching Memory        : " << fixed << setprecision(3)
+                     << (binaryMatchMemory / 1024.0) << " KB\n";
+                cout << "Job Title Binary Search Time : " << fixed << setprecision(3) << binaryTime << " ms\n";
+                cout << "Job Title Binary Search Mem  : " << fixed << setprecision(3)
+                     << (binaryTitleMemory / 1024.0) << " KB\n";
+                cout << "Insertion Sort Time          : " << fixed << setprecision(3) << sortTime << " ms\n";
+                cout << "Insertion Sort Memory        : " << fixed << setprecision(3)
+                     << (sortMemory / 1024.0) << " KB\n";
+                cout << "Approx. Base Memory (arr)    : " << fixed << setprecision(3)
+                     << (baseMemory / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 running = false;
@@ -251,7 +289,6 @@ void runJobSeekerSystem() {
 
     auto systemEnd = chrono::high_resolution_clock::now();
     double totalSystemTime = chrono::duration<double, milli>(systemEnd - systemStart).count();
-
     cout << "Total session runtime: " << fixed << setprecision(3) << totalSystemTime << " ms\n";
 }
 

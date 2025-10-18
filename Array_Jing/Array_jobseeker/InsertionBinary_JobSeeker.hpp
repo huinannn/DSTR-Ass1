@@ -23,7 +23,7 @@ struct JobJS {
 // ---------- Job Matching System (Class) ----------
 class JobMatcher {
 private:
-    JobJS jobJSs[50];               // List of jobs
+    JobJS jobJSs[50];
     int jobCount;
     string seekerSkills[20];
     int seekerSkillCount;
@@ -45,6 +45,10 @@ public:
 
     // ---------- Binary Search ----------
     int binarySearchJob(const string &title);
+    bool binarySearchSkill(string arr[], int n, string target);
+
+    // ---------- Insertion Sort for Seeker Skills ----------
+    void insertionSortSkills();
 
     // ---------- Getter Methods ----------
     int getJobCount() const { return jobCount; }
