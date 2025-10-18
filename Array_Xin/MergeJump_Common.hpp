@@ -9,6 +9,9 @@
 #include <cmath>
 #include <chrono>
 #include <iomanip>
+#include <windows.h>
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
 using namespace std;
 using namespace chrono;
 

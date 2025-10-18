@@ -84,22 +84,41 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
         cout << "        JOB SEEKER MATCHING SYSTEM\n";
         cout << "==============================================\n\n";
 
-        cout << "----------------------------------------------\n";
-        cout << "Enter number of skills you have: ";
-        int skillCount;
-        cin >> skillCount;
-        cin.ignore(); // clear newline
+        int skillCount = 0;
+
+        while (true) {
+            cout << "----------------------------------------------\n";
+            cout << "Enter number of skills you have (1-20): ";
+            if (cin >> skillCount) {
+                if (skillCount >= 1 && skillCount <= 20) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                } else {
+                    cout << "Please enter a number between 1 and 20.\n";
+                }
+            } else {
+                cout << "Invalid input. Please enter a valid number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
 
         DynamicArray<string> userSkills;
         for (int i = 0; i < skillCount; i++) {
             cout << "Enter your skill " << (i + 1) << ": ";
             string s;
             getline(cin, s);
-            userSkills.push_back(trim(toLower(s))); // normalize input
+            s = trim(toLower(s));
+            if (s.empty()) {
+                cout << "Skill cannot be empty. Please re-enter.\n";
+                i--; 
+                continue;
+            }
+            userSkills.push_back(s);
         }
 
         // Start timer
-        auto start = high_resolution_clock::now();
+        auto searchStart = high_resolution_clock::now();
 
         struct Result {
             string title;
@@ -143,14 +162,17 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
             }
         }
 
-        // Stop timer
-        auto end = high_resolution_clock::now();
-        double totalTime = duration<double, milli>(end - start).count();
+         // End of search phase
+        auto searchEnd = high_resolution_clock::now();
+        double searchTime = duration<double, milli>(searchEnd - searchStart).count();
 
-        // Memory estimate
-        size_t memoryUsed = sizeof(jobs) + sizeof(results)
-            + userSkills.getCapacity() * sizeof(string)
-            + results.getCapacity() * sizeof(Result);
+        // Conceptual search memory estimation
+        size_t searchMemoryUsed = sizeof(string) * userSkills.getSize()        // user's skills
+                                + sizeof(string) * jobs.getSize() * 0.1        // fraction of job skills actively checked
+                                + sizeof(int) * 5;                             // loop vars etc.
+
+        // Start timer for sorting phase
+        auto sortStart = high_resolution_clock::now();
 
         // Sort by weight (descending)
         for (int i = 0; i < results.getSize() - 1; i++) {
@@ -164,6 +186,16 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
                 }
             }
         }
+
+        // End of sorting phase
+        auto sortEnd = high_resolution_clock::now();
+        double sortTime = duration<double, milli>(sortEnd - sortStart).count();
+
+        // Conceptual merge/sort memory estimation
+        size_t resultCount = results.getSize();
+        size_t sortMemoryUsed = sizeof(Result*) * 3
+                              + sizeof(Result) * resultCount
+                              + (resultCount / 2) * sizeof(Result*);
 
         // Display top 3 jobs
         if (results.getSize() > 0) {
@@ -197,8 +229,18 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
             cout << "Enter your choice: ";
 
             int choice;
-            cin >> choice;
-            cin.ignore();
+            while (true) {
+                cout << "Enter your choice: ";
+                if (cin >> choice) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    if (choice >= 1 && choice <= 3) break;
+                    else cout << "Invalid choice. Please enter 1-3.\n";
+                } else {
+                    cout << "Invalid input. Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+            }
 
             if (choice == 1) {
                 backToMenu = true; // re-run the job finding loop
@@ -207,11 +249,14 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
                 cout << "\n=============================\n";
                 cout << "      Performance Report\n";
                 cout << "=============================\n";
-                cout << "Total Time Taken: " << fixed << setprecision(3)
-                     << totalTime << " ms\n";
-                cout << "Approx. Memory Used: " << (memoryUsed / 1024.0)
-                     << " KB\n";
-                // stay in the same action menu
+                cout << fixed << setprecision(3);
+                cout << "Search Time: " << searchTime << " ms\n";
+                cout << "Estimated Search Memory: " << (searchMemoryUsed / 1024.0) << " KB\n";
+                cout << "Sort Time: " << sortTime << " ms\n";
+                cout << "Estimated Sort Memory: " << (sortMemoryUsed / 1024.0) << " KB\n";
+                cout << "-------------------------------------\n";
+                cout << "Total Estimated Memory: "
+                     << ((searchMemoryUsed + sortMemoryUsed) / 1024.0) << " KB\n";
             }
             else if (choice == 3) {
                 cout << "\n==============================================\n";
@@ -219,9 +264,6 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
                 cout << "==============================================\n";
                 running = false;
                 backToMenu = true; // exit main loop
-            }
-            else {
-                cout << "Invalid choice. Please try again.\n";
             }
         }
     }

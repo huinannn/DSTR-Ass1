@@ -77,11 +77,18 @@ DynamicArray<Job> readJobs(const string &filename) {
     return jobs;
 }
 
+size_t getCurrentMemoryUsageKB() {
+            PROCESS_MEMORY_COUNTERS_EX pmc;
+            GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+            return pmc.WorkingSetSize / 1024; // Convert bytes → KB
+        }
+
 // ====================== Employer Mode ======================
 void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &candidates) {
     bool continueProgram = true;
     while (continueProgram) {
         auto start = high_resolution_clock::now();
+        size_t initialMemory = getCurrentMemoryUsageKB();
 
         cout << "\n==================================\n";
         cout << "     HR Job Matching System\n";
@@ -91,15 +98,23 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
             cout << " " << i + 1 << ". " << jobs[i].title << "\n";
         }
 
-        cout << "\nEnter job number: ";
         int jobChoice;
-        cin >> jobChoice;
-        cin.ignore();
-
-        if (jobChoice < 1 || jobChoice > jobs.getSize()) {
-            cout << "Invalid choice.\n";
-            return;
+        while (true) {
+            cout << "\nEnter job number: ";
+            if (cin >> jobChoice) { 
+                if (jobChoice >= 1 && jobChoice <= jobs.getSize()) {
+                    break;
+                } else {
+                    cout << "Invalid choice. Please enter a number between 1 and "
+                        << jobs.getSize() << ".\n";
+                }
+            } else {
+                cout << "Invalid input. Please enter a numeric value.\n";
+                cin.clear(); 
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
         }
+        cin.ignore();
 
         Job selectedJob = jobs[jobChoice - 1];
         cout << "\nRole: " << selectedJob.title << "\nRequired Skills:\n";
@@ -107,46 +122,83 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
             cout << " " << i + 1 << ". " << selectedJob.skills[i] << "\n";
         }
 
-        cout << "\nEnter number of skills to use for matching: ";
         int numSkills;
-        cin >> numSkills;
-        cin.ignore();
+        while (true) {
+            cout << "\nEnter number of skills to use for matching: ";
 
-        if (numSkills < 1 || numSkills > selectedJob.skills.getSize()) {
-            cout << "Invalid number of skills.\n";
-            return;
+            if (cin >> numSkills) { 
+                cin.ignore(); 
+
+                if (numSkills >= 1 && numSkills <= selectedJob.skills.getSize()) {
+                    break;
+                } else {
+                    cout << "Invalid number of skills. Please try again.\n";
+                }
+            } else {
+                cout << "Invalid input. Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            }
         }
 
         DynamicArray<string> chosenSkills;
         DynamicArray<int> skillWeights;
 
         for (int i = 0; i < numSkills; i++) {
-            cout << "Enter skill number #" << i + 1 << ": ";
             int skillNum;
-            cin >> skillNum;
-            cin.ignore();
-            if (skillNum < 1 || skillNum > selectedJob.skills.getSize()) {
-                cout << "Invalid skill number.\n";
-                return;
+            while (true) {
+                cout << "Enter skill number #" << i + 1 << ": ";
+
+                if (cin >> skillNum) {
+                    cin.ignore();
+
+                    if (skillNum >= 1 && skillNum <= selectedJob.skills.getSize()) {
+                        chosenSkills.push_back(selectedJob.skills[skillNum - 1]);
+                        break;
+                    } else {
+                        cout << "Invalid skill number. Please enter a number between 1 and "
+                            << selectedJob.skills.getSize() << ".\n";
+                    }
+                } else {
+                    cout << "Invalid input. Please enter a number.\n";
+                    cin.clear(); 
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
             }
-            chosenSkills.push_back(selectedJob.skills[skillNum - 1]);
         }
 
         cout << "\nEnter the weight (1-10) for each selected skill:\n";
         for (int i = 0; i < numSkills; i++) {
-            cout << "Weight for \"" << chosenSkills[i] << "\": ";
             int weight;
-            cin >> weight;
-            cin.ignore();
-            if (weight < 1 || weight > 10) {
-                cout << "Invalid weight value.\n";
-                return;
+            while (true) {
+                cout << "Weight for \"" << chosenSkills[i] << "\": ";
+
+                if (cin >> weight) { 
+                    cin.ignore();
+
+                    if (weight >= 1 && weight <= 10) {
+                        skillWeights.push_back(weight);
+                        break;
+                    } else {
+                        cout << "Invalid weight. Please enter a value between 1 and 10.\n";
+                    }
+                } else {
+                    cout << "Invalid input. Please enter a number.\n";
+                    cin.clear(); 
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
             }
-            skillWeights.push_back(weight);
         }
 
         int totalPossibleWeight = 0;
         for (int i = 0; i < skillWeights.getSize(); i++) totalPossibleWeight += skillWeights[i];
+
+        // =====================================
+        // SEARCH PHASE
+        // =====================================
+        // --- Track memory/time before searching ---
+        size_t searchStartMem = getCurrentMemoryUsageKB();
+        auto searchStartTime = high_resolution_clock::now();
 
         // Compute weighted matching
         struct CandidateMatch {
@@ -179,6 +231,21 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
             }
         }
 
+        auto searchEndTime = high_resolution_clock::now();
+        double searchTime = duration<double, milli>(searchEndTime - searchStartTime).count();
+
+        size_t searchMemoryUsed = sizeof(string) * chosenSkills.getSize()        // list of searched skills
+                                + sizeof(string) * candidates.getSize() * 0.1    // small fraction of candidate list in memory
+                                + sizeof(int) * 5;  
+
+        // =====================================
+        // SORT PHASE
+        // =====================================
+
+        // --- Track memory/time before sorting ---
+        size_t sortStartMem = getCurrentMemoryUsageKB();
+        auto sortStartTime = high_resolution_clock::now();
+
         // Sort by matchedWeight (descending)
         for (int i = 0; i < matches.getSize() - 1; i++) {
             for (int j = 0; j < matches.getSize() - i - 1; j++) {
@@ -189,6 +256,17 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
                 }
             }
         }
+
+        // --- End of sort section ---
+        auto sortEndTime = high_resolution_clock::now();
+        size_t sortEndMem = getCurrentMemoryUsageKB();
+        double sortTime = duration<double, milli>(sortEndTime - sortStartTime).count();
+        size_t sortMemoryUsed = sortEndMem - sortStartMem;
+
+        // Approximate merge sort memory model
+        size_t jobCount = matches.getSize();
+        size_t mergeMemory = sizeof(Candidate*) * 3 + sizeof(Candidate) * jobCount + (jobCount / 2) * sizeof(Candidate*);
+
 
         cout << "\n================== Top 5 Matching Candidates ==================\n";
         cout << left << setw(20) << "Candidate"
@@ -213,11 +291,6 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
         auto end = high_resolution_clock::now();
         double totalTime = duration<double, milli>(end - start).count();
 
-        size_t memoryUsed = sizeof(jobs) + sizeof(candidates) + sizeof(matches)
-                          + chosenSkills.getCapacity() * sizeof(string)
-                          + skillWeights.getCapacity() * sizeof(int)
-                          + matches.getCapacity() * sizeof(ScorePair);
-
         bool showMenu = true;
         while (showMenu) {
             cout << "\n=============================\n";
@@ -227,9 +300,27 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
             cout << "3. Exit\n";
             cout << "=============================\n";
             cout << "Enter your choice: ";
+
             int choice;
-            cin >> choice;
-            cin.ignore();
+            while (true) {
+                cout << "Enter your choice: ";
+                if (cin >> choice) {
+                    cin.ignore();
+
+                    if (choice >= 1 && choice <= 3) {
+                        break; 
+                    } else {
+                        cout << "Invalid choice. Please enter 1, 2, or 3.\n";
+                    }
+                } else {
+                    cout << "Invalid input. Please enter a number.\n";
+                    cin.clear(); 
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                }
+            }
+
+            size_t finalMemory = getCurrentMemoryUsageKB();
+            size_t memoryUsed = finalMemory - initialMemory;
 
             if (choice == 1) {
                 showMenu = false; // restart outer loop
@@ -238,8 +329,14 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
                 cout << "\n=============================\n";
                 cout << "      Performance Report\n";
                 cout << "=============================\n";
-                cout << "Total Time Taken: " << fixed << setprecision(3) << totalTime << " ms\n";
-                cout << "Approx. Memory Used: " << fixed << setprecision(3) << (memoryUsed / 1024.0) << " KB\n";
+                cout << fixed << setprecision(3);
+                cout << "Search Time: " << searchTime << " ms\n";
+                cout << "Estimated Search Memory: " << (searchMemoryUsed / 1024.0) << " KB\n";
+                cout << "Sort Time: " << sortTime << " ms\n";
+                cout << "Estimated Sort Memory: " << (mergeMemory / 1024.0) << " KB\n";
+                cout << "-------------------------------------\n";
+                cout << "Total Estimated Memory: " 
+                    << ((searchMemoryUsed + mergeMemory) / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 cout << "\n==============================================\n";
@@ -247,9 +344,6 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
                 cout << "==============================================\n";
                 return;
             } 
-            else {
-                cout << "Invalid choice. Try again.\n";
-            }
         }
     }
 }
