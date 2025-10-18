@@ -125,6 +125,14 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
     auto searchStart = chrono::high_resolution_clock::now();
 
     size_t memoryUsed = 0;
+    int seekerSkillCount = userSkills.size;
+
+    // Base memory overhead: structures + loop counters
+    size_t baseMemory = sizeof(SkillList) + sizeof(int) * 2 + sizeof(double);
+
+    // ✅ Linked List = seekerSkillCount × (sizeof(string) + sizeof(Job))
+    memoryUsed = (seekerSkillCount * (sizeof(string) + sizeof(Job))) + sizeof(string) + baseMemory;
+
     while (temp) {
         double matchedWeight = 0.0;
         int skillCount = temp->requiredSkills.size;
@@ -135,8 +143,7 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
             const string& jobSkill = temp->requiredSkills.skills[i];
             double weight = skillCount - i;
 
-            // Each call to contains() is a linear search
-            memoryUsed += sizeof(string) + sizeof(double);
+            // Linear search across user skills
             if (userSkills.contains(jobSkill)) {
                 matchedWeight += weight;
             }
@@ -155,48 +162,85 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
     searchMemory = memoryUsed;
 }
 
-
-
 void sortByScore(Job*& head) {
     if (!head) return;
 
-    Job* sorted = nullptr;
+    Job* sorted = nullptr; // New sorted list
     Job* current = head;
 
-    while (current) {
-        Job* next = current->next;
+    while (current != nullptr) {
+        Job* next = current->next;  // Save next node
         current->prev = current->next = nullptr;
 
+        // Insert current into the sorted list
         if (!sorted || current->matchScore > sorted->matchScore) {
+            // Insert at the beginning
             current->next = sorted;
-            if (sorted) sorted->prev = current;
+            if (sorted)
+                sorted->prev = current;
             sorted = current;
         } else {
+            // Traverse the sorted list to find insertion point
             Job* temp = sorted;
             while (temp->next && temp->next->matchScore > current->matchScore)
                 temp = temp->next;
+
+            // Insert after temp
             current->next = temp->next;
-            if (temp->next) temp->next->prev = current;
+            if (temp->next)
+                temp->next->prev = current;
             temp->next = current;
             current->prev = temp;
         }
 
-        current = next;
+        current = next; // Move to next unsorted node
     }
 
     head = sorted;
 }
 
 void displayJobs(Job* head, double minScore) {
-    cout << "\n====== Matching Jobs ======\n";
+    cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
+    cout << left << setw(25) << "Job Title"
+         << setw(10) << "Matched"
+         << setw(10) << "Weight"
+         << setw(12) << "Percentage" << endl;
+    cout << string(55, '-') << endl;
+
     Job* temp = head;
+    int count = 0;
 
     cout << fixed << setprecision(2);
-    while (temp) {
-        if (temp->matchScore >= minScore)
-            cout << temp->title << " - " << temp->matchScore << "% match\n";
+    while (temp && count < 3) {  // Show top 3 only
+        if (temp->matchScore >= minScore) {
+            // Example placeholders: assume matched skills and total weights calculated earlier
+            int matched = 0;
+            double totalWeight = 0.0;
+
+            int skillCount = temp->requiredSkills.size;
+            double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
+
+            for (int i = 0; i < skillCount; ++i) {
+                if (temp->requiredSkills.skills[i] != "") matched++;
+            }
+
+            totalWeight = skillCount; // Example: using skill count as total weight
+
+            ostringstream perc;
+            perc << fixed << setprecision(2) << temp->matchScore << "%";
+
+            cout << left << setw(25) << temp->title
+                 << setw(10) << matched
+                 << setw(10) << totalWeight
+                 << setw(12) << perc.str() << endl;
+
+            count++;
+        }
         temp = temp->next;
     }
+
+    if (count == 0)
+        cout << "No jobs matched your skills.\n";
 
     cout.unsetf(ios::fixed);
     cout.precision(6);
@@ -281,7 +325,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
