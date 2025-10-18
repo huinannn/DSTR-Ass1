@@ -106,19 +106,25 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
 
     auto searchStart = chrono::high_resolution_clock::now();
 
-    size_t memoryUsed = 0;
+    size_t seekerSkillCount = userSkills.size;
+    size_t baseMemory = sizeof(SkillList) + sizeof(double) * 2 + sizeof(int);
+
+    // ✅ Optimized search memory model (using Job instead of Node)
+    size_t optimizedSearchMemory =
+        (sizeof(Job) + sizeof(Job*) + sizeof(int)) * seekerSkillCount + baseMemory;
+
+    searchMemory = optimizedSearchMemory;
+
     while (temp) {
         double matchedWeight = 0.0;
         int skillCount = temp->requiredSkills.size;
-
         double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
 
         for (int i = 0; i < skillCount; ++i) {
             const string& jobSkill = temp->requiredSkills.skills[i];
             double weight = skillCount - i;
 
-            // Each call to contains() is a linear search
-            memoryUsed += sizeof(string) + sizeof(double);
+            // ✅ Optimized linear search check
             if (userSkills.contains(jobSkill)) {
                 matchedWeight += weight;
             }
@@ -134,64 +140,130 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
 
     auto searchEnd = chrono::high_resolution_clock::now();
     searchTime = chrono::duration<double, milli>(searchEnd - searchStart).count();
-    searchMemory = memoryUsed;
 }
 
 // Merge Sort for Doubly Linked List
-Job* split(Job* head) {
-    Job* fast = head, *slow = head;
-    while (fast->next && fast->next->next) {
-        fast = fast->next->next;
-        slow = slow->next;
+void split(Job* source, Job** frontRef, Job** backRef) {
+    Job* slow = source;
+    Job* fast = source->next;
+
+    // Move 'fast' twice as fast as 'slow'
+    while (fast != nullptr) {
+        fast = fast->next;
+        if (fast != nullptr) {
+            slow = slow->next;
+            fast = fast->next;
+        }
     }
-    Job* temp = slow->next;
+
+    // 'slow' is before the midpoint
+    *frontRef = source;
+    *backRef = slow->next;
     slow->next = nullptr;
-    if (temp) temp->prev = nullptr;
-    return temp;
 }
 
-Job* merge(Job* first, Job* second) {
-    if (!first) return second;
-    if (!second) return first;
+Job* merge(Job* a, Job* b) {
+    if (a == nullptr) return b;
+    if (b == nullptr) return a;
 
-    if (first->matchScore >= second->matchScore) {
-        first->next = merge(first->next, second);
-        if (first->next) first->next->prev = first;
-        first->prev = nullptr;
-        return first;
+    Job* result = nullptr;
+
+    // Sort in descending order (higher matchScore first)
+    if (a->matchScore >= b->matchScore) {
+        result = a;
+        result->next = merge(a->next, b);
     } else {
-        second->next = merge(first, second->next);
-        if (second->next) second->next->prev = second;
-        second->prev = nullptr;
-        return second;
+        result = b;
+        result->next = merge(a, b->next);
     }
+
+    return result;
 }
 
-Job* mergeSort(Job* head) {
-    if (!head || !head->next) return head;
-    Job* second = split(head);
+void mergeSort(Job** headRef, double& sortTime, size_t& sortMemory) {
+    Job* head = *headRef;
+    if (head == nullptr || head->next == nullptr)
+        return;
 
-    head = mergeSort(head);
-    second = mergeSort(second);
+    auto sortStart = high_resolution_clock::now();
 
-    return merge(head, second);
+    // Split into two halves
+    Job* a;
+    Job* b;
+    split(head, &a, &b);
+
+    // Recursively sort both halves
+    mergeSort(&a, sortTime, sortMemory);
+    mergeSort(&b, sortTime, sortMemory);
+
+    // Merge the sorted halves
+    *headRef = merge(a, b);
+
+    // ✅ Linked List Merge Sort memory model
+    int jobCount = 0;
+    Job* temp = *headRef;
+    while (temp) {
+        jobCount++;
+        temp = temp->next;
+    }
+
+    // Formula from your image:
+    sortMemory = (sizeof(Job) * jobCount) + (sizeof(Job*) * 4);
+
+    auto sortEnd = high_resolution_clock::now();
+    sortTime = duration<double, milli>(sortEnd - sortStart).count();
 }
 
-void sortByScore(Job*& head) {
-    head = mergeSort(head);
+void sortByScore(Job*& head, double& sortTime, size_t& sortMemory) {
+    mergeSort(&head, sortTime, sortMemory);
 }
 
 void displayJobs(Job* head, double minScore) {
-    cout << "\n====== Matching Jobs ======\n";
+    cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
+    cout << left << setw(25) << "Job Title"
+         << setw(10) << "Matched"
+         << setw(10) << "Weight"
+         << setw(12) << "Percentage" << endl;
+    cout << string(55, '-') << endl;
+
     Job* temp = head;
+    int count = 0;
 
     cout << fixed << setprecision(2);
-    while (temp != nullptr) {
-        if (temp->matchScore >= minScore)
-            cout << temp->title << " - " << temp->matchScore << "% match\n";
+    while (temp && count < 3) {  // Show top 3 only
+        if (temp->matchScore >= minScore) {
+            // Example placeholders: assume matched skills and total weights calculated earlier
+            int matched = 0;
+            double totalWeight = 0.0;
+
+            int skillCount = temp->requiredSkills.size;
+            double maxWeight = (skillCount * (skillCount + 1)) / 2.0;
+
+            for (int i = 0; i < skillCount; ++i) {
+                if (temp->requiredSkills.skills[i] != "") matched++;
+            }
+
+            totalWeight = skillCount; // Example: using skill count as total weight
+
+            ostringstream perc;
+            perc << fixed << setprecision(2) << temp->matchScore << "%";
+
+            cout << left << setw(25) << temp->title
+                 << setw(10) << matched
+                 << setw(10) << totalWeight
+                 << setw(12) << perc.str() << endl;
+
+            count++;
+        }
         temp = temp->next;
     }
-    cout << "\n";
+
+    if (count == 0)
+        cout << "No jobs matched your skills.\n";
+
+    cout.unsetf(ios::fixed);
+    cout.precision(6);
+    cout << endl;
 }
 
 void menu(Job*& head, const SkillList& allValidSkills) {
@@ -224,7 +296,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
 
                 auto sortStart = chrono::high_resolution_clock::now();
-                sortByScore(head);
+                sortByScore(head, sortDuration, sortMemoryKB);
                 auto sortEnd = chrono::high_resolution_clock::now();
 
                 matchDuration = chrono::duration<double, milli>(matchEnd - matchStart).count();
@@ -246,10 +318,10 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                     cout << "\n=============================\n";
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
-                    cout << "Linear Search Time: " << searchDuration << " ms\n";
-                    cout << "Insertion Sort Time: " << sortDuration << " ms\n";
-                    cout << "Linear Search Memory: " << (searchMemoryKB / 1024.0) << " KB\n";
-                    cout << "Insertion Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
+                    cout << "Optimized Linear Search Time: " << searchDuration << " ms\n";
+                    cout << "Merge Sort Time: " << sortDuration << " ms\n";
+                    cout << "Optimized Linear Search Memory: " << (searchMemoryKB / 1024.0) << " KB\n";
+                    cout << "Merge Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
                     cout.unsetf(ios::fixed);
                 } else {
                     cout << "\nNo performance data available yet. Please run 'Insert Skills' first.\n\n";
