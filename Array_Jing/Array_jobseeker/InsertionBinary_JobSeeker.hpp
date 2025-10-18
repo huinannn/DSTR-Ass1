@@ -56,3 +56,4 @@ public:
 };
 
 #endif // INSERTIONBINARY_JOBSEEKER_HPP
+
