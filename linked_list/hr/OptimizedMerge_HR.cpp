@@ -468,7 +468,7 @@ bool exitProgram = false;
 
         while (!exitProgram) {
             cout << endl << "[ ACTION ]" << endl;
-            cout << "1. Performance Summary" << endl;
+            cout << "1. Generate Performance Summary" << endl;
             cout << "2. Continue Search Skills & Match Candidates" << endl;
             cout << "3. Exit" << endl << endl;
             string postChoice = InputUtils::getInput("Enter your choice (1-3): ", "1", "2", "3");
