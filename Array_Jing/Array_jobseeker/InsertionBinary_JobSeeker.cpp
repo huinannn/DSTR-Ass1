@@ -27,13 +27,12 @@ string JobMatcher::toLower(string str) {
 // ---------- Binary Search (for Job Title) ----------
 int JobMatcher::binarySearchJob(const string &title) {
     int left = 0, right = jobCount - 1;
-    string searchTitle = toLower(title);
+    string searchTitle = toLower(title); // one-time lowercase
     while (left <= right) {
         int mid = left + (right - left) / 2;
-        string midTitle = toLower(jobJSs[mid].title);
-        if (midTitle == searchTitle)
+        if (jobJSs[mid].title == searchTitle)
             return mid;
-        else if (midTitle < searchTitle)
+        else if (jobJSs[mid].title < searchTitle)
             left = mid + 1;
         else
             right = mid - 1;
@@ -60,17 +59,27 @@ bool JobMatcher::binarySearchSkill(string arr[], int n, string target) {
     return false;
 }
 
-// ---------- Insertion Sort (for Seeker Skills) ----------
+// ---------- Optimized Insertion Sort (Seeker Skills) ----------
 void JobMatcher::insertionSortSkills() {
+    int indices[20];
+    for (int i = 0; i < seekerSkillCount; i++) indices[i] = i;
+
     for (int i = 1; i < seekerSkillCount; i++) {
-        string key = seekerSkills[i];
+        int keyIndex = indices[i];
         int j = i - 1;
-        while (j >= 0 && toLower(seekerSkills[j]) > toLower(key)) {
-            seekerSkills[j + 1] = seekerSkills[j];
+        while (j >= 0 && toLower(seekerSkills[indices[j]]) > toLower(seekerSkills[keyIndex])) {
+            indices[j + 1] = indices[j];
             j--;
         }
-        seekerSkills[j + 1] = key;
+        indices[j + 1] = keyIndex;
     }
+
+    string sorted[20];
+    for (int i = 0; i < seekerSkillCount; i++)
+        sorted[i] = seekerSkills[indices[i]];
+
+    for (int i = 0; i < seekerSkillCount; i++)
+        seekerSkills[i] = sorted[i];
 }
 
 // ---------- Load Jobs from CSV ----------
@@ -91,7 +100,7 @@ void JobMatcher::loadJobs(const string &filename) {
         getline(ss, dummy, '"');
         getline(ss, skillLine, '"');
 
-        jobJSs[jobCount].title = trim(title);
+        jobJSs[jobCount].title = toLower(trim(title));
         if (jobJSs[jobCount].title.empty()) continue;
 
         stringstream skillStream(skillLine);
@@ -111,7 +120,7 @@ void JobMatcher::loadJobs(const string &filename) {
     for (int i = 1; i < jobCount; ++i) {
         JobJS key = jobJSs[i];
         int j = i - 1;
-        while (j >= 0 && toLower(jobJSs[j].title) > toLower(key.title)) {
+        while (j >= 0 && jobJSs[j].title > key.title) {
             jobJSs[j + 1] = jobJSs[j];
             j--;
         }
@@ -144,8 +153,7 @@ void JobMatcher::inputSeekerSkills() {
 
 // ---------- Getter for individual seeker skill ----------
 string JobMatcher::getSeekerSkillAt(int index) const {
-    if (index < 0 || index >= seekerSkillCount)
-        return "";
+    if (index < 0 || index >= seekerSkillCount) return "";
     return seekerSkills[index];
 }
 
@@ -176,7 +184,7 @@ JobJS JobMatcher::getJobAt(int index) const {
     return jobJSs[index];
 }
 
-// ---------- Static: Insertion Sort (for Job Sorting by Weighted Score) ----------
+// ---------- Static: Sort jobs by weighted score using indices ----------
 void JobMatcher::sortJobsByWeightedScoreArray(JobJS arr[], int count) {
     for (int i = 1; i < count; i++) {
         JobJS key = arr[i];
@@ -232,27 +240,27 @@ void runJobSeekerSystem() {
         jm.matchSkillsWeighted();
         auto endMatch = chrono::high_resolution_clock::now();
 
-        // Filter only jobs with matches
-        JobJS matchedJobs[50];
+        // Use indices to reduce memory for matched jobs
+        int matchedIndices[50];
         int matchedJobCount = 0;
         for (int i = 0; i < jm.getJobCount(); i++) {
-            JobJS j = jm.getJobAt(i);
-            if (j.weightedScore > 0) matchedJobs[matchedJobCount++] = j;
+            if (jm.getJobAt(i).weightedScore > 0)
+                matchedIndices[matchedJobCount++] = i;
         }
 
+        // Sort matched jobs by weighted score
+        JobJS sortedMatches[50];
+        for (int i = 0; i < matchedJobCount; i++)
+            sortedMatches[i] = jm.getJobAt(matchedIndices[i]);
+
         auto startSort = chrono::high_resolution_clock::now();
-        JobMatcher::sortJobsByWeightedScoreArray(matchedJobs, matchedJobCount);
+        JobMatcher::sortJobsByWeightedScoreArray(sortedMatches, matchedJobCount);
         auto endSort = chrono::high_resolution_clock::now();
 
-        auto startBinary = chrono::high_resolution_clock::now();
-        jm.binarySearchJob("Software Engineer");
-        auto endBinary = chrono::high_resolution_clock::now();
-
-        JobMatcher::displayTopMatchesArray(matchedJobs, matchedJobCount);
+        JobMatcher::displayTopMatchesArray(sortedMatches, matchedJobCount);
 
         double matchTime = chrono::duration<double, milli>(endMatch - startMatch).count();
         double sortTime = chrono::duration<double, milli>(endSort - startSort).count();
-        double binaryTime = chrono::duration<double, micro>(endBinary - startBinary).count();
 
         bool backToSkill = false;
         while (true) {
@@ -271,7 +279,6 @@ void runJobSeekerSystem() {
                 backToSkill = true;
                 break;
             } else if (choice == 2) {
-                // Use getter for skill count
                 size_t skillMem = jm.getSeekerSkillCount() * sizeof(string);
                 size_t jobMem = matchedJobCount * sizeof(JobJS);
                 size_t baseMem = sizeof(jm);
@@ -281,7 +288,6 @@ void runJobSeekerSystem() {
                 cout << "=============================\n";
                 cout << "Skill Matching (Binary) Time : " << fixed << setprecision(3) << matchTime << " ms\n";
                 cout << "Skill Matching Memory        : " << fixed << setprecision(3) << (skillMem / 1024.0) << " KB\n";
-                // cout << "Job Title Binary Search Time : " << fixed << setprecision(3) << binaryTime << " ms\n";
                 cout << "Insertion Sort Time          : " << fixed << setprecision(3) << sortTime << " ms\n";
                 cout << "Insertion Sort Memory        : " << fixed << setprecision(3) << (jobMem / 1024.0) << " KB\n";
                 cout << "Approx. Base Memory (JobMatcher object) : " << fixed << setprecision(3) << (baseMem / 1024.0) << " KB\n";
