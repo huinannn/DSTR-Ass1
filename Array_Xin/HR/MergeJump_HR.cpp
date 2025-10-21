@@ -265,7 +265,11 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
 
         // Approximate merge sort memory model
         size_t jobCount = matches.getSize();
-        size_t mergeMemory = sizeof(Candidate*) * 3 + sizeof(Candidate) * jobCount + (jobCount / 2) * sizeof(Candidate*);
+        size_t mergeMemory =
+            sizeof(Candidate*) * 5 +                 
+            sizeof(Candidate) * jobCount * 1.5 +       
+            (jobCount * 0.75) * sizeof(Candidate*) +  
+            2048; 
 
 
         cout << "\n================== Top 5 Matching Candidates ==================\n";
