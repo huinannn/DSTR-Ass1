@@ -111,7 +111,7 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills,
 
     // ✅ Optimized search memory model (using Job instead of Node)
     size_t optimizedSearchMemory =
-        (sizeof(Job) + sizeof(Job*) + sizeof(int)) * seekerSkillCount + baseMemory;
+        ((sizeof(Job) + sizeof(Job*) + sizeof(int)) * seekerSkillCount + baseMemory) / 1024.0;
 
     searchMemory = optimizedSearchMemory;
 
@@ -236,7 +236,7 @@ void mergeSort(Job*& head, double& sortTime, size_t& sortMemory) {
 
     // Estimated memory usage:
     // Each recursion allocates left + right halves + merge overhead
-    sortMemory = leftMemory + rightMemory + sizeof(Job) * countJobs(head);
+    sortMemory = (leftMemory + rightMemory + sizeof(Job) * countJobs(head)) / 1024.0;
 
     auto end = chrono::high_resolution_clock::now();
     sortTime = chrono::duration<double, milli>(end - start).count();

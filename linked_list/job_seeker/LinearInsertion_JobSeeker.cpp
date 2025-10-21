@@ -249,7 +249,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 updateAllMatchScores(head, userSkills);
                 auto searchEnd = chrono::high_resolution_clock::now();
                 searchDuration = chrono::duration<double, milli>(searchEnd - searchStart).count();
-                searchMemoryKB = sizeof(SkillList) + sizeof(string) * userSkills.size;
+                searchMemoryKB = (sizeof(SkillList) + sizeof(string) * userSkills.size) /  1024.0;
 
                 // ✅ Measure Insertion Sort Time & Memory
                 auto sortStart = chrono::high_resolution_clock::now();
@@ -257,7 +257,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 auto sortEnd = chrono::high_resolution_clock::now();
                 sortDuration = chrono::duration<double, milli>(sortEnd - sortStart).count();
                 int jobCount = countJobs(head);
-                sortMemoryKB = sizeof(Job) * jobCount;
+                sortMemoryKB = (sizeof(Job) * jobCount) / 1024.0;
 
                 performanceRecorded = true;
                 displayJobs(head, 0);
