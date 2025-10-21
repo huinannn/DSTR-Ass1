@@ -50,6 +50,7 @@ public:
     int getJobCount() const { return jobCount; }
     int getSeekerSkillCount() const { return seekerSkillCount; }
     JobJS getJobAt(int index) const; // return a copy of job at index
+    string getSeekerSkillAt(int index) const; // <-- ADD THIS
 
     // Static helpers operating on arrays of JobJS (used for matched jobs)
     static void sortJobsByWeightedScoreArray(JobJS arr[], int count);
