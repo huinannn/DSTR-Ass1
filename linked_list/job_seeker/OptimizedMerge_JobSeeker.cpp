@@ -236,7 +236,9 @@ void mergeSort(Job*& head, double& sortTime, size_t& sortMemory) {
 
     // Estimated memory usage:
     // Each recursion allocates left + right halves + merge overhead
-    sortMemory = (leftMemory + rightMemory + sizeof(Job) * countJobs(head)) / 1024.0;
+    double sortMemoryBytes = (leftMemory + rightMemory + ((sizeof(Job) - sizeof(SkillList)) + (sizeof(string) + sizeof(double)) * 4) * countJobs(head)) / 1024.0 ;
+
+    sortMemory = static_cast<size_t>(sortMemoryBytes);
 
     auto end = chrono::high_resolution_clock::now();
     sortTime = chrono::duration<double, milli>(end - start).count();
@@ -366,7 +368,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }

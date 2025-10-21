@@ -257,7 +257,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 auto sortEnd = chrono::high_resolution_clock::now();
                 sortDuration = chrono::duration<double, milli>(sortEnd - sortStart).count();
                 int jobCount = countJobs(head);
-                sortMemoryKB = (sizeof(Job) * jobCount) / 1024.0;
+                sortMemoryKB = ((sizeof(Job) - sizeof(SkillList)) + (sizeof(string) + sizeof(double)) * userSkills.size) * jobCount;
 
                 performanceRecorded = true;
                 displayJobs(head, 0);
@@ -266,7 +266,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
 
             case 2: {
                 if (performanceRecorded) {
-                    cout << fixed << setprecision(4);
+                    cout << fixed << setprecision(20);
                     cout << "\n=============================\n";
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
@@ -297,7 +297,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
