@@ -123,31 +123,42 @@ void HRSystem::displayTop5(const Candidate matchedList[], int matchedCount) {
 
 // ---------- Binary Search ----------
 int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory, int selectedCount) {
+    string targetLower = toLower(target);  // <-- declare targetLower here
+
     auto start = high_resolution_clock::now();
 
-    int low = 0, high = jobCount - 1, result = -1;
-    string targetLower = toLower(target);
+    int result = -1;
 
-    while (low <= high) {
-        int mid = (low + high) / 2;
-        string jobLower = toLower(jobs[mid].name);
-        if (jobLower == targetLower) {
-            result = mid;
-            break;
-        } else if (jobLower < targetLower)
-            low = mid + 1;
-        else
-            high = mid - 1;
+    // Repeat to simulate realistic timing
+    for (int repeat = 0; repeat < 1000; ++repeat) {
+        int low = 0, high = jobCount - 1;
+        result = -1;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            string jobLower = toLower(jobs[mid].name);
+            if (jobLower == targetLower) {
+                result = mid;
+                break;
+            } else if (jobLower < targetLower)
+                low = mid + 1;
+            else
+                high = mid - 1;
+        }
     }
 
     auto end = high_resolution_clock::now();
-    binaryTime = duration<double, milli>(end - start).count();
+    binaryTime = duration<double, milli>(end - start).count() / 1000.0; // average per search
 
-    // Include array for selected skills (rough estimation)
-    binaryMemory = sizeof(low) + sizeof(high) + sizeof(result) + targetLower.capacity() 
-                   + sizeof(int) * selectedCount; 
+    // Adjust memory estimate to include job names accessed
+    binaryMemory = sizeof(int) * 3               // low, high, result
+                 + targetLower.capacity()
+                 + sizeof(string) * jobCount    // memory of job names
+                 + sizeof(int) * selectedCount; // selected skills
+
     return result;
 }
+
 
 // ---------- Insertion Sort ----------
 void HRSystem::insertionSortTimed(Candidate list[], int n, double &insertionTime, size_t &sortMemory, int selectedCount) {
