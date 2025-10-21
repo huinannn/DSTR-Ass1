@@ -2,15 +2,9 @@
 #define INSERTIONBINARY_HR_HPP
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <iomanip>
-#include <algorithm>
-#include <limits>
 #include <chrono>
-#include <vector>
-
 using namespace std;
 using namespace std::chrono;
 
@@ -49,7 +43,6 @@ private:
     int candCount;
 
 public:
-    // Constructor
     HRSystem();
 
     // Utility
@@ -62,22 +55,18 @@ public:
 
     // Display
     void displayJobs();
-    void displayTop5(const vector<Candidate> &sortedList);
+    void displayTop5(const Candidate matchedList[], int matchedCount);
 
     // Core algorithms
-    int binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory);
+    int binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory, int selectedCount = 0);
+    void insertionSortTimed(Candidate list[], int n, double &insertionTime, size_t &sortMemory, int selectedCount);
 
-    // Sort only the matched list (vector) and measure time/memory for that sort
-    void insertionSortTimed(vector<Candidate> &matchList, double &insertionTime, size_t &sortMemory);
+    // Base memory
+    size_t calculateBaseMemory() const;
 
-    // Matching flow
+    // Main process
     void searchAndMatch();
 
-    // Helpers (optional)
-    size_t calculateBaseMemory() const;
-    size_t calculateMatchingMemory(int selectedCount) const;
-
-    // Getters
     int getJobCount() const { return jobCount; }
     int getCandidateCount() const { return candCount; }
 };
