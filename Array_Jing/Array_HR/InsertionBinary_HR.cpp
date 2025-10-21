@@ -149,12 +149,13 @@ int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t
     auto end = high_resolution_clock::now();
     binaryTime = duration<double, milli>(end - start).count();
 
-    // Memory estimation scales with selected skills
+    // Memory estimation: base vars + scaling with skills (each skill ~256 bytes)
     binaryMemory = sizeof(low) + sizeof(high) + sizeof(result) + targetLower.capacity()
-                   + selectedCount * sizeof(int) * 4; // more realistic
+                   + selectedCount * 256; // 6 skills → ~1.5 KB
 
     return result;
 }
+
 
 
 
