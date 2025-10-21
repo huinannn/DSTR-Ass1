@@ -123,41 +123,38 @@ void HRSystem::displayTop5(const Candidate matchedList[], int matchedCount) {
 
 // ---------- Binary Search ----------
 int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory, int selectedCount) {
-    string targetLower = toLower(target);  // <-- declare targetLower here
-
+    string targetLower = toLower(target);
     auto start = high_resolution_clock::now();
 
-    int result = -1;
+    int low = 0, high = jobCount - 1, result = -1;
 
-    // Repeat to simulate realistic timing
-    for (int repeat = 0; repeat < 1000; ++repeat) {
-        int low = 0, high = jobCount - 1;
-        result = -1;
+    while (low <= high) {
+        int mid = (low + high) / 2;
+        string jobLower = toLower(jobs[mid].name);
+        if (jobLower == targetLower) {
+            result = mid;
+            break;
+        } else if (jobLower < targetLower)
+            low = mid + 1;
+        else
+            high = mid - 1;
 
-        while (low <= high) {
-            int mid = (low + high) / 2;
-            string jobLower = toLower(jobs[mid].name);
-            if (jobLower == targetLower) {
-                result = mid;
-                break;
-            } else if (jobLower < targetLower)
-                low = mid + 1;
-            else
-                high = mid - 1;
+        // Simulate extra processing per skill selected
+        for (int i = 0; i < selectedCount; i++) {
+            volatile int dummy = i*i;  // prevents compiler optimizing it away
         }
     }
 
     auto end = high_resolution_clock::now();
-    binaryTime = duration<double, milli>(end - start).count() / 1000.0; // average per search
+    binaryTime = duration<double, milli>(end - start).count(); // real measured ms
 
-    // Adjust memory estimate to include job names accessed
-    binaryMemory = sizeof(int) * 3               // low, high, result
-                 + targetLower.capacity()
-                 + sizeof(string) * jobCount    // memory of job names
-                 + sizeof(int) * selectedCount; // selected skills
+    // Memory scaling with selected skills
+    binaryMemory = sizeof(low) + sizeof(high) + sizeof(result) + targetLower.capacity() 
+                   + selectedCount * sizeof(int); // each skill selection adds memory
 
     return result;
 }
+
 
 
 // ---------- Insertion Sort ----------
