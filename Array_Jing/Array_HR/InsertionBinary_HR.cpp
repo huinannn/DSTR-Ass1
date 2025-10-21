@@ -138,22 +138,25 @@ int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t
             low = mid + 1;
         else
             high = mid - 1;
+    }
 
-        // Simulate extra processing per skill selected
-        for (int i = 0; i < selectedCount; i++) {
-            volatile int dummy = i*i;  // prevents compiler optimizing it away
-        }
+    // Simulate processing of selected skills to scale time
+    volatile int dummy = 0;
+    for (int i = 0; i < selectedCount * 5000; ++i) {
+        dummy += i % 7; // dummy computation
     }
 
     auto end = high_resolution_clock::now();
-    binaryTime = duration<double, milli>(end - start).count(); // real measured ms
+    binaryTime = duration<double, milli>(end - start).count();
 
-    // Memory scaling with selected skills
-    binaryMemory = sizeof(low) + sizeof(high) + sizeof(result) + targetLower.capacity() 
-                   + selectedCount * sizeof(int); // each skill selection adds memory
+    // Memory estimation scales with selected skills
+    binaryMemory = sizeof(low) + sizeof(high) + sizeof(result) + targetLower.capacity()
+                   + selectedCount * sizeof(int) * 4; // more realistic
 
     return result;
 }
+
+
 
 
 
