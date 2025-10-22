@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 using namespace std;
 using namespace std::chrono;
 

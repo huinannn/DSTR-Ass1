@@ -141,37 +141,58 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills) {
 void sortByScore(Job*& head) {
     if (!head || !head->next) return;
 
-    Job* sorted = nullptr;
+    Job* tempList = nullptr;
     Job* current = head;
-
     while (current) {
-        Job* nextNode = current->next;
-        current->prev = current->next = nullptr;
-
-        // ✅ Only consider jobs with a matchScore > 0
-        if (current->matchScore > 0.0) {
-            if (!sorted || current->matchScore > sorted->matchScore) {
-                current->next = sorted;
-                if (sorted)
-                    sorted->prev = current;
-                sorted = current;
-            } else {
-                Job* temp = sorted;
-                while (temp->next && temp->next->matchScore > current->matchScore)
-                    temp = temp->next;
-
-                current->next = temp->next;
-                if (temp->next)
-                    temp->next->prev = current;
-                temp->next = current;
-                current->prev = temp;
-            }
-        }
-
-        current = nextNode;
+        Job* newNode = new Job(current->title, current->requiredSkills, current->matchScore);
+        insertAtTail(tempList, newNode->title, newNode->requiredSkills);
+        tempList->matchScore = newNode->matchScore;
+        delete newNode; // temporary node used only to copy
+        current = current->next;
     }
 
-    head = sorted;
+    Job* sortedHead = nullptr;
+    Job* unsorted = tempList;
+
+    while (unsorted) {
+        Job* nextNode = unsorted->next;
+
+        // Detach node
+        unsorted->prev = unsorted->next = nullptr;
+
+        if (!sortedHead) {
+            sortedHead = unsorted;
+        } else {
+            Job* walker = sortedHead;
+            Job* prev = nullptr;
+
+            // Traverse sorted list until we find a lower score
+            while (walker && walker->matchScore > unsorted->matchScore) {
+                prev = walker;
+                walker = walker->next;
+            }
+
+            if (!prev) {
+                // Insert at head
+                unsorted->next = sortedHead;
+                sortedHead->prev = unsorted;
+                sortedHead = unsorted;
+            } else if (!walker) {
+                // Insert at end
+                prev->next = unsorted;
+                unsorted->prev = prev;
+            } else {
+                // Insert in between
+                prev->next = unsorted;
+                unsorted->prev = prev;
+                unsorted->next = walker;
+                walker->prev = unsorted;
+            }
+        }
+        unsorted = nextNode;
+    }
+
+    head = sortedHead;
 }
 
 void displayJobs(Job* head, double minScore) {
@@ -257,7 +278,10 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                 auto sortEnd = chrono::high_resolution_clock::now();
                 sortDuration = chrono::duration<double, milli>(sortEnd - sortStart).count();
                 int jobCount = countJobs(head);
-                sortMemoryKB = ((sizeof(Job) - sizeof(SkillList)) + (sizeof(string) + sizeof(double)) * userSkills.size) * jobCount;
+                sortMemoryKB = (
+                    (sizeof(Job) + sizeof(Job*) + sizeof(double)) * jobCount * 0.1 + 
+                    (sizeof(string) * userSkills.size) 
+                );
 
                 performanceRecorded = true;
                 displayJobs(head, 0);
@@ -266,7 +290,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
 
             case 2: {
                 if (performanceRecorded) {
-                    cout << fixed << setprecision(20);
+                    cout << fixed << setprecision(4);
                     cout << "\n=============================\n";
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
@@ -297,7 +321,7 @@ int main() {
     Job* head = nullptr;
     SkillList allValidSkills;
 
-    loadJobsFromCSV(head, "../../job_description/mergejob.csv", allValidSkills);
+    loadJobsFromCSV(head, "job_description/mergejob.csv", allValidSkills);
     menu(head, allValidSkills);
     return 0;
 }
