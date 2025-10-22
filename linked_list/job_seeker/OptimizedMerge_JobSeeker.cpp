@@ -365,8 +365,8 @@ void menu(Job*& head, const SkillList& allValidSkills) {
                     cout << "Performance Summary\n";
                     cout << "=============================\n";
                     cout << "Optimized Linear Search Time: " << searchDuration << " ms\n";
-                    cout << "Merge Sort Time: " << sortDuration << " ms\n";
                     cout << "Optimized Linear Search Memory: " << (searchMemoryKB / 1024.0) << " KB\n";
+                    cout << "Merge Sort Time: " << sortDuration << " ms\n";
                     cout << "Merge Sort Memory: " << (sortMemoryKB / 1024.0) << " KB\n\n";
                     cout.unsetf(ios::fixed);
                 } else {
