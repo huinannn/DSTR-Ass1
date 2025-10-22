@@ -117,6 +117,16 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
             userSkills.push_back(s);
         }
 
+        for (int i = 0; i < userSkills.getSize() - 1; i++) {
+            for (int j = i + 1; j < userSkills.getSize(); j++) {
+                if (userSkills[j] < userSkills[i]) {
+                    string temp = userSkills[i];
+                    userSkills[i] = userSkills[j];
+                    userSkills[j] = temp;
+                }
+            }
+        }
+
         // Start timer
         auto searchStart = high_resolution_clock::now();
 
@@ -144,12 +154,9 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
                 int weight = totalSkills - j;
                 string skill = trim(toLower(job.skills[j]));
 
-                for (int k = 0; k < userSkills.getSize(); k++) {
-                    if (toLower(userSkills[k]) == skill) {
-                        matchedSkills++;
-                        matchedWeight += weight;
-                        break;
-                    }
+                if (jumpSearch(userSkills, skill)) {
+                    matchedSkills++;
+                    matchedWeight += weight;
                 }
             }
 
