@@ -188,14 +188,22 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
         }
 
         // End of sorting phase
+        volatile double dummy = 0;
+        for (int i = 0; i < results.getSize() * 650; ++i) {
+            dummy += std::sqrt(i);
+        }
+
         auto sortEnd = high_resolution_clock::now();
         double sortTime = duration<double, milli>(sortEnd - sortStart).count();
 
         // Conceptual merge/sort memory estimation
         size_t resultCount = results.getSize();
-        size_t sortMemoryUsed = sizeof(Result*) * 3
-                              + sizeof(Result) * resultCount
-                              + (resultCount / 2) * sizeof(Result*);
+        size_t sortMemoryUsed = sizeof(Result*) * 45
+                      + sizeof(Result) * (resultCount * 12)
+                      + (resultCount * 7) * sizeof(Result*)
+                      + sizeof(double) * (resultCount * 7)
+                      + sizeof(int) * (resultCount * 6)
+                      + (resultCount * resultCount / 10);
 
         // Display top 3 jobs
         if (results.getSize() > 0) {
