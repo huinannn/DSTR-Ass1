@@ -175,17 +175,50 @@ void jobSeekerMode(const DynamicArray<Job> &jobs) {
         auto sortStart = high_resolution_clock::now();
 
         // Sort by weight (descending)
-        for (int i = 0; i < results.getSize() - 1; i++) {
-            for (int j = 0; j < results.getSize() - i - 1; j++) {
-                if ((results[j].matchedWeight < results[j + 1].matchedWeight) ||
-                    (results[j].matchedWeight == results[j + 1].matchedWeight &&
-                     results[j].percentage < results[j + 1].percentage)) {
-                    Result temp = results[j];
-                    results[j] = results[j + 1];
-                    results[j + 1] = temp;
+        auto merge = [](DynamicArray<Result>& arr, int left, int mid, int right) {
+            int n1 = mid - left + 1;
+            int n2 = right - mid;
+
+            Result* L = new Result[n1];
+            Result* R = new Result[n2];
+
+            for (int i = 0; i < n1; i++) L[i] = arr[left + i];
+            for (int j = 0; j < n2; j++) R[j] = arr[mid + 1 + j];
+
+            int i = 0, j = 0, k = left;
+
+            // Sort by matchedWeight DESC, then percentage DESC
+            while (i < n1 && j < n2) {
+                if (L[i].matchedWeight > R[j].matchedWeight ||
+                    (L[i].matchedWeight == R[j].matchedWeight &&
+                    L[i].percentage > R[j].percentage)) {
+                    arr[k++] = L[i++];
+                } else {
+                    arr[k++] = R[j++];
                 }
             }
-        }
+
+            while (i < n1) arr[k++] = L[i++];
+            while (j < n2) arr[k++] = R[j++];
+
+            delete[] L;
+            delete[] R;
+        };
+
+        // Recursive merge sort
+        std::function<void(DynamicArray<Result>&, int, int)> mergeSort =
+            [&](DynamicArray<Result>& arr, int left, int right) {
+                if (left < right) {
+                    int mid = left + (right - left) / 2;
+                    mergeSort(arr, left, mid);
+                    mergeSort(arr, mid + 1, right);
+                    merge(arr, left, mid, right);
+                }
+            };
+
+        // Perform merge sort if results not empty
+        if (results.getSize() > 1)
+            mergeSort(results, 0, results.getSize() - 1);
 
         // End of sorting phase
         volatile double dummy = 0;

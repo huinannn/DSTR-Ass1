@@ -247,14 +247,48 @@ void employerMode(const DynamicArray<Job> &jobs, const DynamicArray<Candidate> &
         auto sortStartTime = high_resolution_clock::now();
 
         // Sort by matchedWeight (descending)
-        for (int i = 0; i < matches.getSize() - 1; i++) {
-            for (int j = 0; j < matches.getSize() - i - 1; j++) {
-                if (matches[j].matchedWeight < matches[j + 1].matchedWeight) {
-                    auto temp = matches[j];
-                    matches[j] = matches[j + 1];
-                    matches[j + 1] = temp;
+        auto merge = [&](DynamicArray<CandidateMatch>& arr, int left, int mid, int right) {
+            int n1 = mid - left + 1;
+            int n2 = right - mid;
+
+            CandidateMatch* L = new CandidateMatch[n1];
+            CandidateMatch* R = new CandidateMatch[n2];
+
+            for (int i = 0; i < n1; i++) L[i] = arr[left + i];
+            for (int j = 0; j < n2; j++) R[j] = arr[mid + 1 + j];
+
+            int i = 0, j = 0, k = left;
+
+            // Sort by matchedWeight (desc), tie-break by score
+            while (i < n1 && j < n2) {
+                if (L[i].matchedWeight > R[j].matchedWeight ||
+                    (L[i].matchedWeight == R[j].matchedWeight && L[i].score > R[j].score)) {
+                    arr[k++] = L[i++];
+                } else {
+                    arr[k++] = R[j++];
                 }
             }
+
+            while (i < n1) arr[k++] = L[i++];
+            while (j < n2) arr[k++] = R[j++];
+
+            delete[] L;
+            delete[] R;
+        };
+
+        std::function<void(DynamicArray<CandidateMatch>&, int, int)> mergeSort;
+        mergeSort = [&](DynamicArray<CandidateMatch>& arr, int left, int right) {
+            if (left < right) {
+                int mid = left + (right - left) / 2;
+                mergeSort(arr, left, mid);
+                mergeSort(arr, mid + 1, right);
+                merge(arr, left, mid, right);
+            }
+        };
+
+        // --- Perform Merge Sort ---
+        if (matches.getSize() > 1) {
+            mergeSort(matches, 0, matches.getSize() - 1);
         }
 
         // --- End of sort section ---

@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <windows.h>
 #include <psapi.h>
+#include <functional>
 #pragma comment(lib, "psapi.lib")
 using namespace std;
 using namespace chrono;
