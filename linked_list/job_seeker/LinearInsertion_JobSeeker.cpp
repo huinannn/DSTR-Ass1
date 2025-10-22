@@ -253,7 +253,7 @@ void menu(Job*& head, const SkillList& allValidSkills) {
     do {
         cout << "====================================" << endl;
         cout << "              Job Seeker            " << endl;
-        cout << "   Insertion Sort + Weighted Match  " << endl;
+        cout << "   Linear Search + Insertion Sort   " << endl;
         cout << "====================================" << endl;
         cout << "1. Insert Skills" << endl;
         cout << "2. Performance Report" << endl;
