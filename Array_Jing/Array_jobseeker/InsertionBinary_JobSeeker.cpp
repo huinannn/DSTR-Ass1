@@ -290,7 +290,7 @@ void runJobSeekerSystem() {
                 cout << "Skill Matching Memory        : " << fixed << setprecision(3) << (skillMem / 1024.0) << " KB\n";
                 cout << "Insertion Sort Time          : " << fixed << setprecision(3) << sortTime << " ms\n";
                 cout << "Insertion Sort Memory        : " << fixed << setprecision(3) << (jobMem / 1024.0) << " KB\n";
-                cout << "Approx. Base Memory (JobMatcher object) : " << fixed << setprecision(3) << (baseMem / 1024.0) << " KB\n";
+                // cout << "Approx. Base Memory (JobMatcher object) : " << fixed << setprecision(3) << (baseMem / 1024.0) << " KB\n";
             } else if (choice == 3) {
                 running = false;
                 backToSkill = false;

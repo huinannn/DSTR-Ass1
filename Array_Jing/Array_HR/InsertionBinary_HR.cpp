@@ -317,7 +317,7 @@ void HRSystem::searchAndMatch() {
                 cout << "Binary Search Memory      : " << fixed << setprecision(3) << (binaryMemory / 1024.0) << " KB\n";
                 cout << "Insertion Sort Time       : " << fixed << setprecision(3) << insertionTime << " ms\n";
                 cout << "Insertion Sort Memory     : " << fixed << setprecision(3) << (sortMemory / 1024.0) << " KB\n";
-                cout << "Approx. Base Memory (arr) : " << fixed << setprecision(3) << (baseMemory / 1024.0) << " KB\n";
+                // cout << "Approx. Base Memory (arr) : " << fixed << setprecision(3) << (baseMemory / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 cout << "\nExiting HR System...\n";
