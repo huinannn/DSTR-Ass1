@@ -102,24 +102,27 @@ void HRSystem::displayJobs() {
         cout << " " << i + 1 << ". " << jobs[i].name << endl;
 }
 
-void HRSystem::displayTop5(const Candidate matchedList[], int matchedCount) {
+void HRSystem::displayTop5(const Candidate matchedList[], int matchedCount, int totalWeight) {
     cout << "\n===== Top 5 Matching Candidates =====\n";
     cout << left << setw(20) << "Candidate"
          << setw(20) << "Matched Skills"
          << setw(20) << "Matched Weight"
-         << setw(15) << "Score (%)" << endl;
-    cout << "---------------------------------------------------------------\n";
+         << setw(20) << "Score (Weight/Total)" << endl;
+    cout << "--------------------------------------------------------------------------\n";
 
     int limit = (matchedCount < 5) ? matchedCount : 5;
     for (int i = 0; i < limit; ++i) {
         cout << left << setw(20) << matchedList[i].name
              << setw(20) << matchedList[i].matchedSkills
              << setw(20) << matchedList[i].matchedWeight
-             << fixed << setprecision(1) << matchedList[i].percentage << "%" << endl;
+             << fixed << setprecision(1)
+             << matchedList[i].matchedWeight << "/" << totalWeight
+             << " (" << matchedList[i].percentage << "%)" << endl;
     }
     if (limit == 0)
         cout << "!! No matching candidates found.\n";
 }
+
 
 // ---------- Binary Search ----------
 int HRSystem::binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory, int selectedCount) {
@@ -209,7 +212,6 @@ void HRSystem::searchAndMatch() {
         size_t binaryMemory = 0, sortMemory = 0;
 
         int selectedCount = 0; // default
-        // temporary, we will assign actual selectedCount after user input
         int jobIndex = binarySearchTimed(jobInput, binaryTime, binaryMemory, selectedCount);
 
         if (jobIndex == -1) {
@@ -277,6 +279,11 @@ void HRSystem::searchAndMatch() {
         // Recalculate binaryMemory with actual selectedCount
         jobIndex = binarySearchTimed(jobInput, binaryTime, binaryMemory, selectedCount);
 
+        // Calculate total possible weight
+        int totalWeight = 0;
+        for (int w = 0; w < selectedCount; w++)
+            totalWeight += weights[w];
+
         Candidate matchedList[MAX_CANDIDATES];
         int matchedCount = 0;
 
@@ -292,15 +299,15 @@ void HRSystem::searchAndMatch() {
                     }
                 }
             }
-            candidates[i].percentage = (selectedCount == 0) ? 0.0 : 
-                (double)candidates[i].matchedSkills / selectedCount * 100.0;
+            candidates[i].percentage = (totalWeight == 0) ? 0.0 :
+                (double)candidates[i].matchedWeight / totalWeight * 100.0;
 
             if (candidates[i].matchedSkills > 0)
                 matchedList[matchedCount++] = candidates[i];
         }
 
         insertionSortTimed(matchedList, matchedCount, insertionTime, sortMemory, selectedCount);
-        displayTop5(matchedList, matchedCount);
+        displayTop5(matchedList, matchedCount, totalWeight);
 
         int choice;
         while (true) {
@@ -317,7 +324,6 @@ void HRSystem::searchAndMatch() {
                 cout << "Binary Search Memory      : " << fixed << setprecision(3) << (binaryMemory / 1024.0) << " KB\n";
                 cout << "Insertion Sort Time       : " << fixed << setprecision(3) << insertionTime << " ms\n";
                 cout << "Insertion Sort Memory     : " << fixed << setprecision(3) << (sortMemory / 1024.0) << " KB\n";
-                // cout << "Approx. Base Memory (arr) : " << fixed << setprecision(3) << (baseMemory / 1024.0) << " KB\n";
             } 
             else if (choice == 3) {
                 cout << "\nExiting HR System...\n";
@@ -331,6 +337,7 @@ void HRSystem::searchAndMatch() {
         }
     }
 }
+
 
 // ---------- Run ----------
 void runHRSystem() {

@@ -55,7 +55,7 @@ public:
 
     // Display
     void displayJobs();
-    void displayTop5(const Candidate matchedList[], int matchedCount);
+    void displayTop5(const Candidate matchedList[], int matchedCount, int totalWeight);
 
     // Core algorithms
     int binarySearchTimed(const string &target, double &binaryTime, size_t &binaryMemory, int selectedCount = 0);

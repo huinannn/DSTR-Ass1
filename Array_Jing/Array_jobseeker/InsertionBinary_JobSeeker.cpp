@@ -59,7 +59,7 @@ bool JobMatcher::binarySearchSkill(string arr[], int n, string target) {
     return false;
 }
 
-// ---------- Optimized Insertion Sort (Seeker Skills) ----------
+// ---------- Insertion Sort (Seeker Skills) ----------
 void JobMatcher::insertionSortSkills() {
     int indices[20];
     for (int i = 0; i < seekerSkillCount; i++) indices[i] = i;
