@@ -141,59 +141,42 @@ void updateAllMatchScores(Job* head, const SkillList& userSkills) {
 void sortByScore(Job*& head) {
     if (!head || !head->next) return;
 
-    Job* tempList = nullptr;
+    Job* sortedHead = nullptr;  // This will be the new sorted list
     Job* current = head;
+
     while (current) {
-        Job* newNode = new Job(current->title, current->requiredSkills, current->matchScore);
-        insertAtTail(tempList, newNode->title, newNode->requiredSkills);
-        tempList->matchScore = newNode->matchScore;
-        delete newNode; // temporary node used only to copy
-        current = current->next;
-    }
+        Job* nextNode = current->next;
 
-    Job* sortedHead = nullptr;
-    Job* unsorted = tempList;
-
-    while (unsorted) {
-        Job* nextNode = unsorted->next;
-
-        // Detach node
-        unsorted->prev = unsorted->next = nullptr;
+        // Detach current node from original list
+        current->prev = current->next = nullptr;
 
         if (!sortedHead) {
-            sortedHead = unsorted;
+            sortedHead = current;  // First node in sorted list
+        } else if (current->matchScore > sortedHead->matchScore) {
+            // Insert at head
+            current->next = sortedHead;
+            sortedHead->prev = current;
+            sortedHead = current;
         } else {
+            // Insert in the middle or end
             Job* walker = sortedHead;
-            Job* prev = nullptr;
-
-            // Traverse sorted list until we find a lower score
-            while (walker && walker->matchScore > unsorted->matchScore) {
-                prev = walker;
+            while (walker->next && walker->next->matchScore > current->matchScore)
                 walker = walker->next;
-            }
 
-            if (!prev) {
-                // Insert at head
-                unsorted->next = sortedHead;
-                sortedHead->prev = unsorted;
-                sortedHead = unsorted;
-            } else if (!walker) {
-                // Insert at end
-                prev->next = unsorted;
-                unsorted->prev = prev;
-            } else {
-                // Insert in between
-                prev->next = unsorted;
-                unsorted->prev = prev;
-                unsorted->next = walker;
-                walker->prev = unsorted;
-            }
+            current->next = walker->next;
+            if (walker->next)
+                walker->next->prev = current;
+
+            walker->next = current;
+            current->prev = walker;
         }
-        unsorted = nextNode;
+
+        current = nextNode;
     }
 
-    head = sortedHead;
+    head = sortedHead;  // Update the head pointer
 }
+
 
 void displayJobs(Job* head, double minScore) {
     cout << "\nTop 3 Best-Matching Jobs (Weighted Scoring):\n";
@@ -325,3 +308,5 @@ int main() {
     menu(head, allValidSkills);
     return 0;
 }
+
+
